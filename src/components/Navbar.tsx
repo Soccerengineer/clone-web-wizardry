@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 
@@ -7,30 +8,37 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <a href="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-white">Süper</span>
-              <span className="text-2xl font-bold text-primary">Saha</span>
+            <a href="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/ae21a6cd-850f-43cd-b08c-4c508c0a9dbe.png" 
+                alt="SS Logo" 
+                className="h-10 w-auto"
+              />
+              <div className="ml-2 flex items-baseline">
+                <span className="text-2xl font-bold text-white">Süper</span>
+                <span className="text-2xl font-bold text-[#10B981]">Saha</span>
+              </div>
             </a>
           </div>
           
-          <div className="hidden md:flex items-center space-x-6">
-            <Button variant="ghost" className="text-white hover:text-primary transition-colors">
+          <div className="hidden md:flex items-center space-x-4">
+            <Button variant="ghost" className="text-white hover:text-[#10B981] transition-colors">
               <span>Hakkımızda</span>
               <ChevronDown className="ml-1 h-4 w-4" />
             </Button>
-            <Button variant="ghost" className="text-white hover:text-primary transition-colors">
+            <Button variant="ghost" className="text-white hover:text-[#10B981] transition-colors">
               Duyurular
             </Button>
-            <Button variant="ghost" className="text-white hover:text-primary transition-colors">
+            <Button variant="ghost" className="text-white hover:text-[#10B981] transition-colors">
               Tesisimi Ekle
             </Button>
-            <Button variant="ghost" className="text-white hover:text-primary transition-colors">
+            <Button variant="ghost" className="text-white hover:text-[#10B981] transition-colors">
               Karşılaşma Bul
             </Button>
             <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">
               GİRİŞ YAP
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 text-white">
+            <Button className="bg-[#10B981] hover:bg-[#10B981]/90 text-white">
               KAYIT OL
             </Button>
           </div>
