@@ -1,6 +1,8 @@
 
 import Navbar from "@/components/Navbar";
 import SearchCard from "@/components/SearchCard";
+import HowItWorks from "@/components/HowItWorks";
+import WhatWeOffer from "@/components/WhatWeOffer";
 
 const Index = () => {
   return (
@@ -15,7 +17,7 @@ const Index = () => {
       
       <Navbar />
       
-      <main className="relative pt-16">
+      <main className="relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-4rem)] flex">
           <div className="flex flex-col md:flex-row items-center justify-between w-full gap-12 py-16">
             <div className="flex-1 animate-fadeIn">
@@ -34,6 +36,9 @@ const Index = () => {
             </div>
           </div>
         </div>
+
+        <HowItWorks />
+        <WhatWeOffer />
       </main>
     </div>
   );
