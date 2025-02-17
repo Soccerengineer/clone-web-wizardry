@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Play } from "lucide-react";
 
 const SearchCard = () => {
   return (
@@ -63,6 +63,13 @@ const SearchCard = () => {
         <Button className="w-full bg-primary hover:bg-primary/90 text-white">
           <Search className="mr-2 h-4 w-4" />
           Karşılaşma Bul
+        </Button>
+
+        <Button 
+          className="w-full bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-lg py-6"
+        >
+          <Play className="mr-2 h-6 w-6" />
+          MAÇA BAŞLA
         </Button>
       </div>
     </Card>
