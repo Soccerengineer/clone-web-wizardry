@@ -1,5 +1,5 @@
 
-import { LightningBolt, Target, Timer, CreditCard } from "lucide-react";
+import { Zap, Target, Timer, CreditCard } from "lucide-react";
 import { Card } from "./ui/card";
 
 const WhatWeOffer = () => {
@@ -8,7 +8,7 @@ const WhatWeOffer = () => {
       title: "Kolay Kullanım",
       highlight: "Kolay",
       description: "Pratik tak çıkar etiketlerimizle maçlarınızı özgürce oynayın ve istatistiklerinizi takip edin",
-      icon: <LightningBolt className="w-12 h-12 text-white mb-4" />
+      icon: <Zap className="w-12 h-12 text-white mb-4" />
     },
     {
       title: "İsabetli Analiz",
