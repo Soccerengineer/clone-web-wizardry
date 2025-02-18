@@ -9,7 +9,181 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          awarded_at: string
+          description: string | null
+          id: string
+          player_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          awarded_at?: string
+          description?: string | null
+          id?: string
+          player_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          awarded_at?: string
+          description?: string | null
+          id?: string
+          player_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          created_at: string
+          id: string
+          match_date: string
+          status: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_date: string
+          status?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_date?: string
+          status?: string | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_stats: {
+        Row: {
+          condition_rating: number | null
+          created_at: string
+          id: string
+          match_id: string | null
+          mvp: boolean | null
+          player_id: string | null
+          position: Database["public"]["Enums"]["player_position"] | null
+          position_rating: number | null
+          technical_rating: number | null
+        }
+        Insert: {
+          condition_rating?: number | null
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          mvp?: boolean | null
+          player_id?: string | null
+          position?: Database["public"]["Enums"]["player_position"] | null
+          position_rating?: number | null
+          technical_rating?: number | null
+        }
+        Update: {
+          condition_rating?: number | null
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          mvp?: boolean | null
+          player_id?: string | null
+          position?: Database["public"]["Enums"]["player_position"] | null
+          position_rating?: number | null
+          technical_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      venues: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +192,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      player_position: "goalkeeper" | "defender" | "midfielder" | "forward"
     }
     CompositeTypes: {
       [_ in never]: never
