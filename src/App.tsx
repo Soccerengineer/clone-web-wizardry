@@ -9,6 +9,10 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import Statistics from "./pages/Statistics";
 import Overview from "./pages/Overview";
+import Matches from "./pages/Matches";
+import Rankings from "./pages/Rankings";
+import Promotions from "./pages/Promotions";
+import Tournaments from "./pages/Tournaments";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +27,10 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/overview" element={<Overview />} />
+          <Route path="/matches" element={<Matches />} />
+          <Route path="/rankings" element={<Rankings />} />
+          <Route path="/promotions" element={<Promotions />} />
+          <Route path="/tournaments" element={<Tournaments />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
