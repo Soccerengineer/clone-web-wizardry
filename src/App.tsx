@@ -3,7 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
@@ -16,26 +18,111 @@ import Tournaments from "./pages/Tournaments";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/statistics" element={<Statistics />} />
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/matches" element={<Matches />} />
-          <Route path="/rankings" element={<Rankings />} />
-          <Route path="/promotions" element={<Promotions />} />
-          <Route path="/tournaments" element={<Tournaments />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Handle email confirmation and automatic login
+const ConfirmEmail = () => {
+  useEffect(() => {
+    const handleEmailConfirmation = async () => {
+      const hash = window.location.hash;
+      if (hash) {
+        try {
+          const { error } = await supabase.auth.getSession();
+          if (error) throw error;
+          window.location.replace('/overview');
+        } catch (error) {
+          console.error('Error handling email confirmation:', error);
+          window.location.replace('/');
+        }
+      }
+    };
+
+    handleEmailConfirmation();
+  }, []);
+
+  return null;
+};
+
+const App = () => {
+  // Track authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      if (event === 'SIGNED_IN') {
+        window.location.replace('/overview');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Protected route component
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (isAuthenticated === null) {
+      return null; // Loading state
+    }
+
+    if (!isAuthenticated) {
+      return <Navigate to="/" />;
+    }
+
+    return <>{children}</>;
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/auth/confirm" element={<ConfirmEmail />} />
+            
+            {/* Protected routes */}
+            <Route path="/statistics" element={
+              <ProtectedRoute>
+                <Statistics />
+              </ProtectedRoute>
+            } />
+            <Route path="/overview" element={
+              <ProtectedRoute>
+                <Overview />
+              </ProtectedRoute>
+            } />
+            <Route path="/matches" element={
+              <ProtectedRoute>
+                <Matches />
+              </ProtectedRoute>
+            } />
+            <Route path="/rankings" element={
+              <ProtectedRoute>
+                <Rankings />
+              </ProtectedRoute>
+            } />
+            <Route path="/promotions" element={
+              <ProtectedRoute>
+                <Promotions />
+              </ProtectedRoute>
+            } />
+            <Route path="/tournaments" element={
+              <ProtectedRoute>
+                <Tournaments />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

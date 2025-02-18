@@ -17,14 +17,18 @@ import {
   SidebarMenuButton,
   SidebarProvider
 } from "@/components/ui/sidebar";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface UserLayoutProps {
   children: ReactNode;
 }
 
 const UserLayout = ({ children }: UserLayoutProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const menuItems = [
-    { icon: LayoutDashboard, label: "Genel Bakış", href: "/dashboard" },
+    { icon: LayoutDashboard, label: "Genel Bakış", href: "/overview" },
     { icon: LineChart, label: "İstatistikler", href: "/statistics" },
     { icon: Users, label: "Karşılaşmalar", href: "/matches" },
     { icon: Trophy, label: "Sıralamalar", href: "/rankings" },
@@ -41,14 +45,14 @@ const UserLayout = ({ children }: UserLayoutProps) => {
               <SidebarGroupContent>
                 {menuItems.map((item, index) => (
                   <SidebarMenuItem key={index}>
-                    <SidebarMenuButton asChild>
-                      <a
-                        href={item.href}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-gray-300 hover:text-white transition-colors"
-                      >
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.label}</span>
-                      </a>
+                    <SidebarMenuButton 
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-gray-300 hover:text-white transition-colors ${
+                        location.pathname === item.href ? 'bg-white/5 text-white' : ''
+                      }`}
+                      onClick={() => navigate(item.href)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
