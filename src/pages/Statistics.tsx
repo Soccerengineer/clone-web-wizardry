@@ -1,8 +1,13 @@
 
-import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import UserLayout from "@/components/ui/user-layout";
-import { Trophy, Medal, Target } from "lucide-react";
+import {
+  Activity,
+  Zap,
+  Timer,
+  Target,
+  Share,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -14,169 +19,150 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 
 const Statistics = () => {
-  const { data: stats } = useQuery({
-    queryKey: ['player-stats-summary'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('player_stats')
-        .select(`
-          id,
-          position,
-          mvp,
-          matches(
-            id,
-            match_date,
-            venues(
-              name
-            )
-          )
-        `);
+  // Sample data for physical statistics
+  const physicalStats = {
+    distance: "8.5km",
+    sprint: "32",
+    avgSprint: "24km/h",
+    maxSprint: "32km/h",
+    activityTime: "85min"
+  };
 
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Sample data for technical statistics
+  const technicalStats = {
+    shots: "15",
+    avgShotSpeed: "85km/h",
+    maxShotSpeed: "105km/h",
+    passes: "45",
+    possession: "65%"
+  };
 
-  const { data: achievements } = useQuery({
-    queryKey: ['player-achievements'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('achievements')
-        .select('*')
-        .eq('type', 'medal');
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Calculate statistics
-  const totalMatches = stats?.length || 0;
-  const mvpCount = stats?.filter(stat => stat.mvp).length || 0;
-  const medals = achievements?.length || 0;
-
-  // Calculate position statistics
-  const positionStats = stats?.reduce((acc, stat) => {
-    if (stat.position) {
-      acc[stat.position] = (acc[stat.position] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Find most played positions
-  const sortedPositions = Object.entries(positionStats || {})
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 2);
-
-  // Find favorite venue
-  const venueStats = stats?.reduce((acc, stat) => {
-    const venueName = stat.matches?.venues?.name;
-    if (venueName) {
-      acc[venueName] = (acc[venueName] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const favoriteVenue = Object.entries(venueStats || {})
-    .sort(([, a], [, b]) => b - a)[0]?.[0];
-
-  // Sample data for win/loss rate chart
-  const winLossData = [
-    { name: 'Kazanılan', value: 65 },
-    { name: 'Kaybedilen', value: 35 },
+  // Sample data for sprint speed over time
+  const sprintData = [
+    { time: "10'", speed: 18 },
+    { time: "20'", speed: 24 },
+    { time: "30'", speed: 28 },
+    { time: "40'", speed: 22 },
+    { time: "50'", speed: 26 },
+    { time: "60'", speed: 20 },
+    { time: "70'", speed: 25 },
+    { time: "80'", speed: 19 },
   ];
 
-  // Sample data for experience progress
-  const expData = [
-    { name: 'Deneyim', current: 750, total: 1000 }
+  // Sample data for shot distribution
+  const shotData = [
+    { type: "Sol Ayak", count: 8 },
+    { type: "Sağ Ayak", count: 5 },
+    { type: "Kafa", count: 2 },
   ];
 
   return (
     <UserLayout>
-      <div className="space-y-6">
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Target className="w-5 h-5 text-primary" />
+      <div className="space-y-8">
+        {/* Physical Statistics */}
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">Fiziksel İstatistikler</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Activity className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Mesafe</h3>
+                <p className="text-2xl font-bold text-white">{physicalStats.distance}</p>
               </div>
-              <div>
-                <h3 className="text-sm text-gray-400">Toplam Maç</h3>
-                <p className="text-2xl font-bold text-white">{totalMatches}</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Trophy className="w-5 h-5 text-primary" />
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Zap className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Sprint</h3>
+                <p className="text-2xl font-bold text-white">{physicalStats.sprint}</p>
               </div>
-              <div>
-                <h3 className="text-sm text-gray-400">MVP</h3>
-                <p className="text-2xl font-bold text-white">{mvpCount}</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-primary/10">
-                <Medal className="w-5 h-5 text-primary" />
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Zap className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Ortalama Sprint</h3>
+                <p className="text-2xl font-bold text-white">{physicalStats.avgSprint}</p>
               </div>
-              <div>
-                <h3 className="text-sm text-gray-400">Madalya</h3>
-                <p className="text-2xl font-bold text-white">{medals}</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <div>
-              <h3 className="text-sm text-gray-400">Favori Tesis</h3>
-              <p className="text-xl font-bold text-white mt-2">{favoriteVenue || "Henüz yok"}</p>
-            </div>
-          </Card>
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Zap className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Maksimum Sprint</h3>
+                <p className="text-2xl font-bold text-white">{physicalStats.maxSprint}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Timer className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Aktivite Süresi</h3>
+                <p className="text-2xl font-bold text-white">{physicalStats.activityTime}</p>
+              </div>
+            </Card>
+          </div>
         </div>
 
-        {/* Position Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-4">Pozisyon İstatistikleri</h3>
-            <div className="space-y-4">
-              {sortedPositions.map(([position, count], index) => (
-                <div key={position} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">
-                      {index === 0 ? "En çok" : "İkinci en çok"}
-                    </span>
-                    <span className="text-white">{position}</span>
-                  </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{
-                        width: `${(count / totalMatches) * 100}%`
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+        {/* Technical Statistics */}
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">Teknik İstatistikler</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Target className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Şutlar</h3>
+                <p className="text-2xl font-bold text-white">{technicalStats.shots}</p>
+              </div>
+            </Card>
 
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Target className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Ortalama Şut Hızı</h3>
+                <p className="text-2xl font-bold text-white">{technicalStats.avgShotSpeed}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Target className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Maksimum Şut Hızı</h3>
+                <p className="text-2xl font-bold text-white">{technicalStats.maxShotSpeed}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Share className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Paslar</h3>
+                <p className="text-2xl font-bold text-white">{technicalStats.passes}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+              <div className="flex flex-col items-center gap-2">
+                <Activity className="w-8 h-8 text-primary" />
+                <h3 className="text-sm text-gray-400">Top Hakimiyeti</h3>
+                <p className="text-2xl font-bold text-white">{technicalStats.possession}</p>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Sprint Speed Chart */}
           <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-4">Kazanma/Kaybetme Oranı</h3>
-            <div className="h-[200px]">
+            <h3 className="text-lg font-semibold text-white mb-4">Sprint Hızı Değişimi</h3>
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={winLossData}>
+                <LineChart data={sprintData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="#ffffff40" />
+                  <XAxis dataKey="time" stroke="#ffffff40" />
                   <YAxis stroke="#ffffff40" />
                   <Tooltip
                     contentStyle={{
@@ -185,34 +171,40 @@ const Statistics = () => {
                       borderRadius: '8px',
                     }}
                   />
-                  <Bar dataKey="value" fill="#10B981" />
+                  <Line
+                    type="monotone"
+                    dataKey="speed"
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    dot={{ fill: '#10B981' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Shot Distribution Chart */}
+          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Şut Dağılımı</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={shotData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="type" stroke="#ffffff40" />
+                  <YAxis stroke="#ffffff40" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1a2332',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#10B981" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </Card>
         </div>
-
-        {/* Experience and Level */}
-        <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-white">Seviye İlerlemesi</h3>
-            <span className="text-2xl font-bold text-primary">Lvl 7</span>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Deneyim</span>
-                <span className="text-white">750/1000 XP</span>
-              </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full"
-                  style={{ width: '75%' }}
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
       </div>
     </UserLayout>
   );
