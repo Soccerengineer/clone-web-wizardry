@@ -1,18 +1,19 @@
+
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import UserLayout from "@/components/ui/user-layout";
 import { Star, Trophy, Medal, Target } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 
 interface PlayerStats {
   condition_rating: number;
@@ -80,12 +81,29 @@ const Overview = () => {
     averages.position = Math.round(averages.position / total);
   }
 
-  const performanceData = stats?.map(stat => ({
-    date: new Date(stat.matches.match_date).toLocaleDateString('tr-TR'),
-    condition: stat.condition_rating,
-    technical: stat.technical_rating,
-    position: stat.position_rating
-  })) || [];
+  // Calculate statistics from Statistics page
+  const totalMatches = stats?.length || 0;
+  const mvpCount = stats?.filter(stat => stat.mvp).length || 0;
+  const medals = achievements?.length || 0;
+
+  // Calculate position statistics
+  const positionStats = stats?.reduce((acc, stat) => {
+    if (stat.position) {
+      acc[stat.position] = (acc[stat.position] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Find most played positions
+  const sortedPositions = Object.entries(positionStats || {})
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 2);
+
+  // Sample data for win/loss rate chart
+  const winLossData = [
+    { name: 'Kazanılan', value: 65 },
+    { name: 'Kaybedilen', value: 35 },
+  ];
 
   return (
     <UserLayout>
@@ -113,8 +131,44 @@ const Overview = () => {
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Combined Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-primary/10">
+                <Target className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm text-gray-400">Toplam Maç</h3>
+                <p className="text-2xl font-bold text-white">{totalMatches}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-primary/10">
+                <Trophy className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm text-gray-400">MVP</h3>
+                <p className="text-2xl font-bold text-white">{mvpCount}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-primary/10">
+                <Medal className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm text-gray-400">Madalya</h3>
+                <p className="text-2xl font-bold text-white">{medals}</p>
+              </div>
+            </div>
+          </Card>
+
           <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
             <div className="flex items-center gap-4">
               <div className="p-4 rounded-full bg-primary/10">
@@ -126,87 +180,75 @@ const Overview = () => {
               </div>
             </div>
           </Card>
+        </div>
 
+        {/* Position Stats and Win/Loss Rate */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="p-4 rounded-full bg-primary/10">
-                <Trophy className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-400">Teknik</h3>
-                <p className="text-2xl font-bold text-white">{averages?.technical || 0}%</p>
-              </div>
+            <h3 className="text-lg font-semibold text-white mb-4">Pozisyon İstatistikleri</h3>
+            <div className="space-y-4">
+              {sortedPositions.map(([position, count], index) => (
+                <div key={position} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">
+                      {index === 0 ? "En çok" : "İkinci en çok"}
+                    </span>
+                    <span className="text-white">{position}</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full"
+                      style={{
+                        width: `${(count / totalMatches) * 100}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
 
-          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10 opacity-50">
-            <div className="flex items-center gap-4">
-              <div className="p-4 rounded-full bg-primary/10">
-                <Medal className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-400">Pozisyon (Beta)</h3>
-                <p className="text-2xl font-bold text-white">{averages?.position || 0}%</p>
-                <span className="text-xs text-gray-500">Yakında</span>
-              </div>
+          <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Kazanma/Kaybetme Oranı</h3>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={winLossData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="name" stroke="#ffffff40" />
+                  <YAxis stroke="#ffffff40" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1a2332',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#10B981" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </Card>
         </div>
 
-        {/* Performance Chart */}
+        {/* Experience and Level */}
         <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-          <h3 className="text-lg font-semibold text-white mb-4">Performans Gelişimi</h3>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#ffffff40"
-                  tick={{ fill: '#ffffff80' }}
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-white">Seviye İlerlemesi</h3>
+            <span className="text-2xl font-bold text-primary">Lvl 7</span>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Deneyim</span>
+                <span className="text-white">750/1000 XP</span>
+              </div>
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: '75%' }}
                 />
-                <YAxis 
-                  stroke="#ffffff40"
-                  tick={{ fill: '#ffffff80' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1a2332',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                  }}
-                  labelStyle={{ color: '#fff' }}
-                />
-                <Line
-                  type="monotone"
-                  name="Kondisyon"
-                  dataKey="condition"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  dot={{ fill: '#10B981', strokeWidth: 2 }}
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  name="Teknik"
-                  dataKey="technical"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  dot={{ fill: '#3B82F6', strokeWidth: 2 }}
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  name="Pozisyon"
-                  dataKey="position"
-                  stroke="#6B7280"
-                  strokeWidth={2}
-                  dot={{ fill: '#6B7280', strokeWidth: 2 }}
-                  activeDot={{ r: 8 }}
-                  strokeDasharray="5 5"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </Card>
 
