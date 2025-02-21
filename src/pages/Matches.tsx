@@ -1,7 +1,6 @@
 
 import UserLayout from "@/components/ui/user-layout";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CalendarDays, MapPin, Users, Clock } from "lucide-react";
 
 const Matches = () => {
@@ -31,7 +30,6 @@ const Matches = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-white">Yaklaşan Karşılaşmalar</h1>
-          <Button className="bg-primary">Karşılaşma Oluştur</Button>
         </div>
 
         <div className="grid gap-4">
@@ -60,10 +58,9 @@ const Matches = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">
-                    Detaylar
-                  </Button>
-                  <Button className="bg-primary">Katıl</Button>
+                  <div className="text-sm text-gray-400">
+                    {match.type}
+                  </div>
                 </div>
               </div>
             </Card>
