@@ -64,6 +64,9 @@ const AuthenticatedApp = () => {
       if (event === 'SIGNED_IN') {
         navigate('/overview');
       }
+      if (event === 'SIGNED_OUT') {
+        navigate('/');
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -71,12 +74,14 @@ const AuthenticatedApp = () => {
 
   // Protected route component
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    const location = useLocation();
+
     if (isAuthenticated === null) {
       return null; // Loading state
     }
 
     if (!isAuthenticated) {
-      return <Navigate to="/" />;
+      return <Navigate to="/" state={{ from: location }} replace />;
     }
 
     return <>{children}</>;
