@@ -1,7 +1,8 @@
 
 import UserLayout from "@/components/ui/user-layout";
 import { Card } from "@/components/ui/card";
-import { CalendarDays, MapPin, Users, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarDays, MapPin, Users, Clock, ArrowRight } from "lucide-react";
 
 const Matches = () => {
   const upcomingMatches = [
@@ -61,6 +62,10 @@ const Matches = () => {
                   <div className="text-sm text-gray-400">
                     {match.type}
                   </div>
+                  <Button className="bg-primary hover:bg-primary/90">
+                    <span>Maç Detayları</span>
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </Card>

@@ -8,16 +8,16 @@ const Promotions = () => {
   const promotions = [
     {
       id: 1,
-      title: "İlk Maç İndirimi",
-      description: "İlk maçınızda %50 indirim fırsatı!",
-      code: "ILKMAC50",
+      title: "İlk Maç Ücretsiz",
+      description: "Anketi doldur, ilk maçını ücretsiz oyna!",
+      code: "ANKET2024",
       expires: "30 Nisan 2024",
     },
     {
       id: 2,
-      title: "Arkadaşını Getir",
-      description: "Arkadaşını getir, bir sonraki maçında %25 indirim kazan!",
-      code: "ARKADAS25",
+      title: "İkinci Maç %50 İndirimli",
+      description: "İkinci maçında otomatik %50 indirim fırsatı!",
+      code: "MATCH50",
       expires: "Süresiz",
     },
   ];

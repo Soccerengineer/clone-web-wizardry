@@ -112,17 +112,17 @@ const UserLayout = ({ children }: UserLayoutProps) => {
             {/* Main Navigation */}
             <SidebarContent>
               <SidebarGroup>
-                <SidebarGroupContent>
+                <SidebarGroupContent className="flex flex-col items-stretch">
                   {menuItems.map((item, index) => (
                     <SidebarMenuItem key={index}>
                       <SidebarMenuButton 
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-gray-300 hover:text-white transition-colors ${
+                        className={`flex items-center gap-3 px-3 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${
                           location.pathname === item.href ? 'bg-white/5 text-white' : ''
                         }`}
                         onClick={() => navigate(item.href)}
                       >
                         <item.icon className="h-5 w-5" />
-                        <span>{item.label}</span>
+                        <span className="flex-1">{item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
