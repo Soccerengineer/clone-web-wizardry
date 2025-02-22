@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +26,8 @@ import Profile from "./pages/settings/Profile";
 import Security from "./pages/settings/Security";
 import Privacy from "./pages/settings/Privacy";
 import Language from "./pages/settings/Language";
+import AISquadBuilder from "./pages/AISquadBuilder";
+import Challenges from "./pages/Challenges";
 
 const queryClient = new QueryClient();
 
@@ -155,6 +156,16 @@ const AuthenticatedApp = () => {
       <Route path="/settings/language" element={
         <ProtectedRoute>
           <Language />
+        </ProtectedRoute>
+      } />
+      <Route path="/ai-squad-builder" element={
+        <ProtectedRoute>
+          <AISquadBuilder />
+        </ProtectedRoute>
+      } />
+      <Route path="/challenges" element={
+        <ProtectedRoute>
+          <Challenges />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

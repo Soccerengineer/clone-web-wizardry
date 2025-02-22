@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { 
   LayoutDashboard, 
@@ -9,7 +8,9 @@ import {
   CalendarDays,
   Settings,
   LogOut,
-  User
+  User,
+  Brain,
+  Target
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,8 @@ const UserLayout = ({ children }: UserLayoutProps) => {
     { icon: Trophy, label: "Sıralamalar", href: "/rankings" },
     { icon: Award, label: "Promosyonlar ve Ödüller", href: "/promotions" },
     { icon: CalendarDays, label: "Turnuva ve Etkinlikler", href: "/tournaments" },
+    { icon: Brain, label: "Kadro KUR AI (Beta)", href: "/ai-squad-builder" },
+    { icon: Target, label: "İddialar", href: "/challenges" },
   ];
 
   const handleLogout = async () => {
@@ -116,12 +119,12 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                   {menuItems.map((item, index) => (
                     <SidebarMenuItem key={index}>
                       <SidebarMenuButton 
-                        className={`flex items-center gap-3 px-3 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${
+                        className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${
                           location.pathname === item.href ? 'bg-white/5 text-white' : ''
                         }`}
                         onClick={() => navigate(item.href)}
                       >
-                        <item.icon className="h-5 w-5" />
+                        <item.icon className="h-5 w-5 shrink-0" />
                         <span className="flex-1">{item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
