@@ -15,6 +15,11 @@ import Matches from "./pages/Matches";
 import Rankings from "./pages/Rankings";
 import Promotions from "./pages/Promotions";
 import Tournaments from "./pages/Tournaments";
+import Settings from "./pages/settings/Settings";
+import Profile from "./pages/settings/Profile";
+import Security from "./pages/settings/Security";
+import Privacy from "./pages/settings/Privacy";
+import Language from "./pages/settings/Language";
 
 const queryClient = new QueryClient();
 
@@ -112,6 +117,32 @@ const AuthenticatedApp = () => {
       <Route path="/tournaments" element={
         <ProtectedRoute>
           <Tournaments />
+        </ProtectedRoute>
+      } />
+      {/* Settings Routes */}
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <Settings />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings/profile" element={
+        <ProtectedRoute>
+          <Profile />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings/security" element={
+        <ProtectedRoute>
+          <Security />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings/privacy" element={
+        <ProtectedRoute>
+          <Privacy />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings/language" element={
+        <ProtectedRoute>
+          <Language />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
