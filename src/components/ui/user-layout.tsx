@@ -8,7 +8,8 @@ import {
   Award,
   CalendarDays,
   Settings,
-  LogOut 
+  LogOut,
+  User
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,6 +21,15 @@ import {
   SidebarProvider,
   SidebarSeparator
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,10 +50,6 @@ const UserLayout = ({ children }: UserLayoutProps) => {
     { icon: Trophy, label: "Sıralamalar", href: "/rankings" },
     { icon: Award, label: "Promosyonlar ve Ödüller", href: "/promotions" },
     { icon: CalendarDays, label: "Turnuva ve Etkinlikler", href: "/tournaments" },
-  ];
-
-  const settingsItems = [
-    { icon: Settings, label: "Ayarlar", href: "/settings" },
   ];
 
   const handleLogout = async () => {
@@ -67,55 +73,63 @@ const UserLayout = ({ children }: UserLayoutProps) => {
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen w-full bg-[#0A1120]">
         <Sidebar className="border-r border-white/10">
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                {menuItems.map((item, index) => (
-                  <SidebarMenuItem key={index}>
-                    <SidebarMenuButton 
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-gray-300 hover:text-white transition-colors ${
-                        location.pathname === item.href ? 'bg-white/5 text-white' : ''
-                      }`}
-                      onClick={() => navigate(item.href)}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarSeparator />
-
-            <SidebarGroup>
-              <SidebarGroupContent>
-                {settingsItems.map((item, index) => (
-                  <SidebarMenuItem key={index}>
-                    <SidebarMenuButton 
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-gray-300 hover:text-white transition-colors ${
-                        location.pathname.startsWith(item.href) ? 'bg-white/5 text-white' : ''
-                      }`}
-                      onClick={() => navigate(item.href)}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-red-400 hover:text-red-300 transition-colors"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-5 w-5" />
+          <div className="flex flex-col h-full">
+            {/* Profile Dropdown */}
+            <div className="p-4 border-b border-white/10">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="w-full flex items-center gap-2 px-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="/placeholder.svg" />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-start flex-1">
+                      <span className="text-sm font-medium text-white">Kullanıcı Adı</span>
+                      <span className="text-xs text-gray-400">@nickname</span>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="start" side="right">
+                  <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Ayarlar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                    <LogOut className="mr-2 h-4 w-4" />
                     <span>Çıkış Yap</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Main Navigation */}
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  {menuItems.map((item, index) => (
+                    <SidebarMenuItem key={index}>
+                      <SidebarMenuButton 
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-gray-300 hover:text-white transition-colors ${
+                          location.pathname === item.href ? 'bg-white/5 text-white' : ''
+                        }`}
+                        onClick={() => navigate(item.href)}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </div>
         </Sidebar>
 
         <main className="flex-1 overflow-auto">
