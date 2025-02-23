@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -58,20 +59,21 @@ const ConfirmEmail = () => {
 
 const AuthenticatedApp = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
-    });
+    };
 
-    // Subscribe to auth changes
+    checkAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
-      if (event === 'SIGNED_IN') {
-        navigate('/overview');
-      }
+      const authenticated = !!session;
+      setIsAuthenticated(authenticated);
+      
       if (event === 'SIGNED_OUT') {
         navigate('/');
       }
@@ -82,18 +84,20 @@ const AuthenticatedApp = () => {
 
   // Protected route component
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    const location = useLocation();
-
     if (isAuthenticated === null) {
       return null; // Loading state
     }
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated && location.pathname !== '/') {
       return <Navigate to="/" state={{ from: location }} replace />;
     }
 
     return <>{children}</>;
   };
+
+  if (isAuthenticated === null) {
+    return null; // Initial loading state
+  }
 
   return (
     <Routes>
