@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -84,7 +83,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
               <Button
                 variant="ghost"
                 className="flex items-center w-full p-0 hover:bg-transparent"
-                onClick={() => navigate('/overview')}
+                onClick={() => navigate('/')}
               >
                 <img 
                   src="/lovable-uploads/ae21a6cd-850f-43cd-b08c-4c508c0a9dbe.png" 
@@ -160,7 +159,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
               <Button
                 variant="ghost"
                 className="w-full flex items-center gap-2 p-4 text-gray-300 hover:text-white hover:bg-white/5"
-                onClick={() => navigate('/overview')}
+                onClick={() => navigate('/')}
               >
                 <Home className="h-5 w-5" />
                 <span>Ana Sayfaya Geri Dön</span>
