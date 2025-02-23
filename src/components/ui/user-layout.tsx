@@ -1,4 +1,6 @@
+
 import { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { 
   LayoutDashboard, 
   LineChart, 
@@ -10,7 +12,8 @@ import {
   LogOut,
   User,
   Brain,
-  Target
+  Target,
+  Home
 } from "lucide-react";
 import {
   Sidebar,
@@ -77,39 +80,19 @@ const UserLayout = ({ children }: UserLayoutProps) => {
       <div className="flex min-h-screen w-full bg-[#0A1120]">
         <Sidebar className="border-r border-white/10">
           <div className="flex flex-col h-full">
-            {/* Profile Dropdown */}
+            {/* Logo */}
             <div className="p-4 border-b border-white/10">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="w-full flex items-center gap-2 px-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg" />
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col items-start flex-1">
-                      <span className="text-sm font-medium text-white">Kullanıcı Adı</span>
-                      <span className="text-xs text-gray-400">@nickname</span>
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="start" side="right">
-                  <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profil</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Ayarlar</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Çıkış Yap</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link to="/" className="flex items-center">
+                <img 
+                  src="/lovable-uploads/ae21a6cd-850f-43cd-b08c-4c508c0a9dbe.png" 
+                  alt="SS Logo" 
+                  className="h-8 w-auto"
+                />
+                <div className="ml-2 flex items-baseline">
+                  <span className="text-xl font-bold text-white">Süper</span>
+                  <span className="text-xl font-bold text-[#10B981]">Saha</span>
+                </div>
+              </Link>
             </div>
 
             {/* Main Navigation */}
@@ -119,7 +102,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                   {menuItems.map((item, index) => (
                     <SidebarMenuItem key={index}>
                       <SidebarMenuButton 
-                        className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${
+                        className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full list-none ${
                           location.pathname === item.href ? 'bg-white/5 text-white' : ''
                         }`}
                         onClick={() => navigate(item.href)}
@@ -132,6 +115,54 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
+
+            {/* Footer with Profile and Home Button */}
+            <div className="mt-auto border-t border-white/10">
+              {/* Profile Dropdown */}
+              <div className="p-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full flex items-center gap-2 px-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-start flex-1">
+                        <span className="text-sm font-medium text-white">Kullanıcı Adı</span>
+                        <span className="text-xs text-gray-400">@nickname</span>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="start" side="right">
+                    <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profil</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Ayarlar</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Çıkış Yap</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Home Button */}
+              <Button
+                variant="ghost"
+                className="w-full flex items-center gap-2 p-4 text-gray-300 hover:text-white hover:bg-white/5"
+                onClick={() => navigate('/')}
+              >
+                <Home className="h-5 w-5" />
+                <span>Ana Sayfaya Geri Dön</span>
+              </Button>
+            </div>
           </div>
         </Sidebar>
 

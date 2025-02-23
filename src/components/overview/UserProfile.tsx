@@ -3,7 +3,7 @@ import { Star } from "lucide-react";
 
 const UserProfile = () => {
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center justify-center gap-4 max-w-2xl mx-auto">
       <img
         src="/lovable-uploads/31dd6418-1a95-4b8e-8af1-81058a36855d.png"
         alt="User Avatar"
