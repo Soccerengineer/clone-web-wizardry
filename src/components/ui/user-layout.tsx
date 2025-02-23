@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   LineChart, 
@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -82,7 +81,11 @@ const UserLayout = ({ children }: UserLayoutProps) => {
           <div className="flex flex-col h-full">
             {/* Logo */}
             <div className="p-4 border-b border-white/10">
-              <Link to="/" className="flex items-center">
+              <Button
+                variant="ghost"
+                className="flex items-center w-full p-0 hover:bg-transparent"
+                onClick={() => navigate('/overview')}
+              >
                 <img 
                   src="/lovable-uploads/ae21a6cd-850f-43cd-b08c-4c508c0a9dbe.png" 
                   alt="SS Logo" 
@@ -92,17 +95,17 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                   <span className="text-xl font-bold text-white">Süper</span>
                   <span className="text-xl font-bold text-[#10B981]">Saha</span>
                 </div>
-              </Link>
+              </Button>
             </div>
 
             {/* Main Navigation */}
             <SidebarContent>
               <SidebarGroup>
-                <SidebarGroupContent className="flex flex-col items-stretch">
+                <SidebarGroupContent className="flex flex-col items-stretch [&>*]:list-none">
                   {menuItems.map((item, index) => (
-                    <SidebarMenuItem key={index}>
+                    <SidebarMenuItem key={index} className="list-none">
                       <SidebarMenuButton 
-                        className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full list-none ${
+                        className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${
                           location.pathname === item.href ? 'bg-white/5 text-white' : ''
                         }`}
                         onClick={() => navigate(item.href)}
@@ -157,7 +160,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
               <Button
                 variant="ghost"
                 className="w-full flex items-center gap-2 p-4 text-gray-300 hover:text-white hover:bg-white/5"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/overview')}
               >
                 <Home className="h-5 w-5" />
                 <span>Ana Sayfaya Geri Dön</span>
