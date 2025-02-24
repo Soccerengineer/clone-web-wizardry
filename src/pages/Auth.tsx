@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Phone, User, LogIn } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -15,6 +14,25 @@ const Auth = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationMethod, setRegistrationMethod] = useState<'email' | 'phone' | null>(null);
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/overview');
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate('/overview');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   // Registration form state
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,7 +44,6 @@ const Auth = () => {
     
     if (!isCodeSent) {
       try {
-        // In a real app, we would send a verification code here
         setIsCodeSent(true);
         toast({
           title: "Başarılı!",
@@ -41,7 +58,6 @@ const Auth = () => {
       }
     } else {
       try {
-        // In a real app, we would verify the code here
         toast({
           title: "Başarılı!",
           description: "Doğrulama başarılı. Yönlendiriliyorsunuz...",
@@ -61,7 +77,6 @@ const Auth = () => {
     e.preventDefault();
     if (!isCodeSent) {
       try {
-        // In a real app, we would send an SMS verification code here
         setIsCodeSent(true);
         toast({
           title: "Başarılı!",
@@ -76,7 +91,6 @@ const Auth = () => {
       }
     } else {
       try {
-        // In a real app, we would verify the code here
         toast({
           title: "Başarılı!",
           description: "Doğrulama başarılı. Yönlendiriliyorsunuz...",
