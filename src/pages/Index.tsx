@@ -93,7 +93,7 @@ const Index = () => {
 
               <Button 
                 className="w-full sm:w-auto px-8 bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-lg sm:text-xl py-6 sm:py-8 transform transition-all duration-200 hover:scale-105"
-                onClick={() => setIsGameStartModalOpen(true)}
+                onClick={() => navigate('/auth')}
               >
                 <Play className="mr-2 h-6 w-6 sm:h-8 sm:w-8" />
                 MAÇA BAŞLA

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +28,7 @@ import Privacy from "./pages/settings/Privacy";
 import Language from "./pages/settings/Language";
 import AISquadBuilder from "./pages/AISquadBuilder";
 import Challenges from "./pages/Challenges";
+import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +102,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
       <Route path="/about" element={<About />} />
       <Route path="/auth/confirm" element={<ConfirmEmail />} />
       
