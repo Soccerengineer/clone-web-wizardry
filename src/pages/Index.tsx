@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -89,17 +89,25 @@ const Index = () => {
       </div>
       
       <main className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-4rem)] flex">
-          <div className="flex flex-col md:flex-row items-center justify-between w-full gap-12 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-4rem)]">
+          <div className="flex flex-col md:flex-row items-start justify-between w-full gap-12 pt-8">
             <div className="flex-1 animate-fadeIn">
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
                 Süper <span className="text-primary">Saha</span> Nedir?
               </h1>
-              <p className="text-lg text-gray-300 max-w-2xl">
+              <p className="text-lg text-gray-300 max-w-2xl mb-8">
                 Süper Saha, spor tutkunlarını dijital bir platformda bir araya getiren, 
                 maç öncesi takılan etiketlerle istatistikleri, sıralamaları ve rekabeti 
                 birleştiren yenilikçi bir spor deneyimidir.
               </p>
+
+              <Button 
+                className="w-full md:w-2/3 bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-xl py-8"
+                onClick={() => null}
+              >
+                <Play className="mr-2 h-8 w-8" />
+                MAÇA BAŞLA
+              </Button>
             </div>
             
             <div className="flex-1 flex justify-center animate-fadeIn" style={{ animationDelay: "0.2s" }}>
