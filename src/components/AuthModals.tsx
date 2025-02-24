@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Mail, Lock, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface AuthModalsProps {
   isLoginOpen: boolean;
@@ -17,6 +18,7 @@ interface AuthModalsProps {
 const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginClose, onRegisterClose }: AuthModalsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -44,6 +46,7 @@ const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginClose, onRegisterClose
         description: "Süper Saha'ya hoş geldiniz.",
       });
       onLoginClose();
+      navigate('/overview');
     } catch (error: any) {
       toast({
         title: "Giriş başarısız",
