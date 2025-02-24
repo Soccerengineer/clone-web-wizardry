@@ -1,13 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search, Play } from "lucide-react";
-
 const SearchCard = () => {
-  return (
-    <Card className="w-full max-w-md p-6 bg-white/10 backdrop-blur-lg border-white/20">
+  return <Card className="w-full max-w-md p-6 bg-white/10 backdrop-blur-lg border-white/20 mx-[15px] my-[70px]">
       <h2 className="text-2xl font-bold text-white mb-6">Maçını Bul</h2>
       <div className="space-y-4">
         <Select>
@@ -43,11 +40,7 @@ const SearchCard = () => {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          className="w-full bg-white/5 border-white/20 text-white"
-          placeholder="Tarih"
-        />
+        <Input type="date" className="w-full bg-white/5 border-white/20 text-white" placeholder="Tarih" />
 
         <Select>
           <SelectTrigger className="w-full bg-white/5 border-white/20 text-white">
@@ -65,15 +58,8 @@ const SearchCard = () => {
           Karşılaşma Bul
         </Button>
 
-        <Button 
-          className="w-full bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-lg py-6"
-        >
-          <Play className="mr-2 h-6 w-6" />
-          MAÇA BAŞLA
-        </Button>
+        
       </div>
-    </Card>
-  );
+    </Card>;
 };
-
 export default SearchCard;
