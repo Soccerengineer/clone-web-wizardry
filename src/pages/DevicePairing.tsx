@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,19 @@ const DevicePairing = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<Position | "">("");
   const [selectedTeam, setSelectedTeam] = useState<Team | "">("");
-  const [selectedDevice, setSelectedDevice] = useState<number | null>(null);
+  const [suggestedDeviceId, setSuggestedDeviceId] = useState<number | null>(null);
+  
+  // Giriş kontrolü
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        navigate("/auth");
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
   
   // Kullanılabilir saatler (örnek)
   const availableTimes = [
@@ -48,15 +60,17 @@ const DevicePairing = () => {
     { value: "misafir", label: "Misafir" }
   ];
   
-  // Cihaz numaraları
-  const getAvailableDevices = (): number[] => {
-    if (selectedTeam === "ev_sahibi") {
-      return [1, 2, 3, 4, 5, 6, 7];
-    } else if (selectedTeam === "misafir") {
-      return [8, 9, 10, 11, 12, 13, 14];
+  // Takım seçildiğinde otomatik cihaz numarası atama
+  useEffect(() => {
+    if (selectedTeam) {
+      // Gerçek uygulamada, bu kısım API ile boş cihaz numaralarını sorgulayabilir
+      const deviceIdRange = selectedTeam === "ev_sahibi" ? [1, 2, 3, 4, 5, 6, 7] : [8, 9, 10, 11, 12, 13, 14];
+      
+      // Basit bir örnek - normalde boş olan cihazları kontrol edersiniz
+      const randomIndex = Math.floor(Math.random() * deviceIdRange.length);
+      setSuggestedDeviceId(deviceIdRange[randomIndex]);
     }
-    return [];
-  };
+  }, [selectedTeam]);
   
   // Sonraki adıma geçme
   const handleNext = () => {
@@ -70,13 +84,10 @@ const DevicePairing = () => {
     } else if (step === 3 && !selectedTeam) {
       toast({ title: "Uyarı", description: "Lütfen bir takım seçin.", variant: "destructive" });
       return;
-    } else if (step === 4 && !selectedDevice) {
-      toast({ title: "Uyarı", description: "Lütfen bir cihaz numarası seçin.", variant: "destructive" });
-      return;
     }
     
     // Adımı ilerlet
-    if (step < 5) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
       // Eşleştirme işlemini tamamla
@@ -124,7 +135,7 @@ const DevicePairing = () => {
       
       toast({ 
         title: "Başarılı", 
-        description: `Eşleştirme tamamlandı! Cihaz #${selectedDevice} seçildi.` 
+        description: `Eşleştirme tamamlandı! Cihaz #${suggestedDeviceId} atandı.` 
       });
       
       // Ana sayfaya yönlendir
@@ -142,7 +153,7 @@ const DevicePairing = () => {
   const renderProgress = () => {
     return (
       <div className="flex mb-8">
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3].map((s) => (
           <div key={s} className="flex items-center">
             <div 
               className={`rounded-full h-10 w-10 flex items-center justify-center
@@ -151,7 +162,7 @@ const DevicePairing = () => {
             >
               {s}
             </div>
-            {s < 4 && (
+            {s < 3 && (
               <div 
                 className={`h-1 w-10 ${s < step ? 'bg-primary/80' : 'bg-gray-300'}`}
               ></div>
@@ -222,30 +233,6 @@ const DevicePairing = () => {
       case 4:
         return (
           <>
-            <CardTitle className="text-xl mb-2">Cihaz Seçimi</CardTitle>
-            <CardDescription className="mb-6">
-              {selectedTeam === "ev_sahibi" 
-                ? "Ev sahibi takım için 1-7 arası cihazlar kullanılabilir." 
-                : "Misafir takım için 8-14 arası cihazlar kullanılabilir."}
-            </CardDescription>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {getAvailableDevices().map((device) => (
-                <Button
-                  key={device}
-                  variant={selectedDevice === device ? "default" : "outline"}
-                  className={`h-16 text-lg ${selectedDevice === device ? "" : "bg-white/5 border-white/20"}`}
-                  onClick={() => setSelectedDevice(device)}
-                >
-                  {device}
-                </Button>
-              ))}
-            </div>
-          </>
-        );
-      
-      case 5:
-        return (
-          <>
             <CardTitle className="text-xl mb-6">Eşleştirme Özeti</CardTitle>
             <div className="space-y-3">
               <div className="flex justify-between border-b border-white/10 pb-2">
@@ -261,8 +248,8 @@ const DevicePairing = () => {
                 <span>{teams.find(t => t.value === selectedTeam)?.label}</span>
               </div>
               <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="font-medium">Cihaz Numarası:</span>
-                <span>#{selectedDevice}</span>
+                <span className="font-medium">Atanan Cihaz:</span>
+                <span className="font-semibold text-green-400">#{suggestedDeviceId}</span>
               </div>
             </div>
           </>
@@ -303,7 +290,7 @@ const DevicePairing = () => {
             <Button 
               onClick={handleNext}
             >
-              {step < 5 ? "İleri" : "Tamamla"}
+              {step < 4 ? "İleri" : "Tamamla"}
             </Button>
           </CardFooter>
         </Card>

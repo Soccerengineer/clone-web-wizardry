@@ -46,7 +46,7 @@ const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginClose, onRegisterClose
         description: "Süper Saha'ya hoş geldiniz.",
       });
       onLoginClose();
-      navigate('/overview');
+      navigate('/device-pairing');
     } catch (error: any) {
       toast({
         title: "Giriş başarısız",

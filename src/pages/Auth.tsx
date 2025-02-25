@@ -1,10 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Phone, User, LogIn } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 
@@ -18,7 +19,7 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/overview');
+        navigate('/device-pairing');
       }
     };
 
@@ -26,7 +27,7 @@ const Auth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate('/overview');
+        navigate('/device-pairing');
       }
     });
 
@@ -62,7 +63,7 @@ const Auth = () => {
           title: "Başarılı!",
           description: "Doğrulama başarılı. Yönlendiriliyorsunuz...",
         });
-        navigate('/overview');
+        navigate('/device-pairing');
       } catch (error: any) {
         toast({
           title: "Hata",
@@ -95,7 +96,7 @@ const Auth = () => {
           title: "Başarılı!",
           description: "Doğrulama başarılı. Yönlendiriliyorsunuz...",
         });
-        navigate('/overview');
+        navigate('/device-pairing');
       } catch (error: any) {
         toast({
           title: "Hata",
@@ -107,7 +108,7 @@ const Auth = () => {
   };
 
   const handleContinueAsGuest = () => {
-    navigate('/guest');
+    navigate('/overview');
   };
 
   return (
