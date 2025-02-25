@@ -1,1 +1,4 @@
 project_id = "kolqnwtkwxjgfkcnzzis"
+
+# Supabase konfigürasyonu
+# Not: Auth ayarları Supabase Dashboard üzerinden yapılandırılmalıdır.

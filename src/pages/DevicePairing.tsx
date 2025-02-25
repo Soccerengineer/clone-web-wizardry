@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { deviceService } from "@/services/supabase.service";
 
 // Pozisyonlar için tip
 type Position = "forvet" | "ikinci_forvet" | "orta_saha" | "sag_bek" | "sol_bek" | "stoper";
@@ -27,31 +27,73 @@ const DevicePairing = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | "">("");
   const [suggestedDeviceId, setSuggestedDeviceId] = useState<number | null>(null);
   
-  // Rezervasyon tamamlandı durumu
+  // İşlem durumları
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  
-  // Kullanıcı tipi (gerçek kullanıcı veya misafir)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isGuestUser, setIsGuestUser] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  // Kullanıcı bilgileri için state
+  const [userName, setUserName] = useState<string>('Kullanıcı');
+  const [identifierLabel, setIdentifierLabel] = useState<string>('Kullanıcı:');
+  const [identifierValue, setIdentifierValue] = useState<string>('-');
   
   // Giriş kontrolü
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
       
-      // localStorage'da misafir durumunu kontrol et
-      const userType = localStorage.getItem('userType');
+      // localStorage'da misafir durumunu kontrol et (yeni localStorage anahtarıyla)
+      const guestUserJSON = localStorage.getItem('guestUser');
+      const guestUser = guestUserJSON ? JSON.parse(guestUserJSON) : null;
       
-      // Misafir kullanıcı ise bilgiyi kaydet
-      setIsGuestUser(userType === 'guest');
+      // Kullanıcı bilgilerini kaydet
+      const isGuest = guestUser && guestUser.isGuest;
+      setIsGuestUser(isGuest);
+      setUserId(data.session?.user.id || null);
+      
+      // Kullanıcı tipine göre identifier bilgilerini ayarla
+      if (isGuest) {
+        setIdentifierLabel('Misafir:');
+        setIdentifierValue('Misafir');  // Telefon numarası yerine sadece "Misafir" yazacak
+      } else if (data.session?.user.id) {
+        setIdentifierLabel('Kullanıcı:');
+        fetchUserInfo(data.session.user.id);
+      } else {
+        setIdentifierLabel('Kullanıcı:');
+        setIdentifierValue('-');
+      }
       
       // Supabase oturumu yoksa ve misafir değilse yönlendir
-      if (!data.session && userType !== 'guest') {
+      if (!data.session && !guestUser) {
         navigate("/auth");
       }
     };
     
     checkAuth();
   }, [navigate]);
+  
+  // Kullanıcı bilgilerini getir
+  const fetchUserInfo = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', userId)
+        .single();
+        
+      if (profile) {
+        const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+        setUserName(fullName || 'Kullanıcı');
+        setIdentifierValue(fullName || 'Kullanıcı');
+      } else {
+        setIdentifierValue('Kullanıcı');
+      }
+    } catch (error) {
+      console.error('Profil bilgisi alınamadı:', error);
+      setIdentifierValue('Kullanıcı');
+    }
+  };
   
   // Kullanılabilir saatler (örnek)
   const availableTimes = [
@@ -75,17 +117,52 @@ const DevicePairing = () => {
     { value: "misafir", label: "Misafir" }
   ];
   
-  // Takım seçildiğinde otomatik cihaz numarası atama
+  // Takım seçildiğinde Supabase'den boş cihaz numarası al
   useEffect(() => {
-    if (selectedTeam) {
-      // Gerçek uygulamada, bu kısım API ile boş cihaz numaralarını sorgulayabilir
-      const deviceIdRange = selectedTeam === "ev_sahibi" ? [1, 2, 3, 4, 5, 6, 7] : [8, 9, 10, 11, 12, 13, 14];
-      
-      // Basit bir örnek - normalde boş olan cihazları kontrol edersiniz
-      const randomIndex = Math.floor(Math.random() * deviceIdRange.length);
-      setSuggestedDeviceId(deviceIdRange[randomIndex]);
-    }
-  }, [selectedTeam]);
+    const getAvailableDevice = async () => {
+      if (selectedTeam && selectedTime) {
+        setIsProcessing(true);
+        
+        try {
+          // Supabase'den müsait cihaz ID'si önerisi al
+          const { data: availableDeviceId, error } = await deviceService.suggestAvailableDeviceId(
+            selectedTime, 
+            selectedTeam
+          );
+          
+          if (error) {
+            toast({
+              title: "Hata",
+              description: error.message,
+              variant: "destructive"
+            });
+            
+            // Takım seçimini sıfırla
+            setSelectedTeam("");
+            return;
+          }
+          
+          // Önerilen cihaz ID'sini kaydet
+          setSuggestedDeviceId(availableDeviceId);
+          
+        } catch (err) {
+          console.error("Müsait cihaz alınırken hata:", err);
+          toast({
+            title: "Hata",
+            description: "Müsait cihaz kontrolü sırasında bir hata oluştu.",
+            variant: "destructive"
+          });
+          
+          // Takım seçimini sıfırla
+          setSelectedTeam("");
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    };
+    
+    getAvailableDevice();
+  }, [selectedTeam, selectedTime, toast]);
   
   // Sonraki adıma geçme
   const handleNext = () => {
@@ -119,37 +196,96 @@ const DevicePairing = () => {
   
   // Eşleştirmeyi tamamlama
   const completeDevicePairing = async () => {
+    setIsProcessing(true);
+    
     try {
-      // Eğer misafir kullanıcı değilse, Supabase'e oyuncu istatistiklerini kaydetmeyi dene
-      if (!isGuestUser) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData.session?.user.id;
+      // Eğer önerilen bir cihaz ID'si yoksa hata göster
+      if (suggestedDeviceId === null) {
+        toast({ 
+          title: "Hata", 
+          description: "Cihaz numarası atanamadı. Lütfen farklı bir saat veya takım seçin.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      // Cihaz eşleştirme verilerini hazırla
+      const pairingData: any = {
+        selected_time: selectedTime,
+        selected_position: selectedPosition,
+        selected_team: selectedTeam,
+        device_id: suggestedDeviceId
+      };
+      
+      // Kullanıcı tipine göre veri hazırla
+      if (isGuestUser) {
+        // Misafir kullanıcı bilgilerini localStorage'dan al
+        const guestUserJSON = localStorage.getItem('guestUser');
+        const guestUser = guestUserJSON ? JSON.parse(guestUserJSON) : null;
         
-        if (userId) {
-          try {
-            // Burada misafir kullanıcı olmayan ve gerçek oturum açmış kullanıcı 
-            // veri tabanına kayıt yapacak, ancak RLS politikaları nedeniyle bu hata verebilir.
-            // Şimdilik hatayı yakalarız ve kullanıcı deneyimini bozmayız.
-            const { error } = await supabase
-              .from('player_stats')
-              .insert({
-                player_id: userId,
-                position: selectedPosition === "ikinci_forvet" ? "forward" : 
-                         selectedPosition === "orta_saha" ? "midfielder" :
-                         selectedPosition === "sag_bek" || selectedPosition === "sol_bek" || selectedPosition === "stoper" ? "defender" : "forward",
-              });
-              
-            if (error) {
-              // RLS hatasını yakalamasak da, hatayı konsola yazdıralım ve kullanıcı arayüzünü bozmayalım
-              console.error("Veri kaydı sırasında hata:", error.message);
-            }
-          } catch (err) {
-            console.error("Veri kaydı sırasında yakalanamayan hata:", err);
+        // Telefon numarasını guest_identifier olarak kullan
+        if (guestUser && guestUser.phone) {
+          // guest_identifier'ı telefon numarası olarak ayarla
+          pairingData.is_guest = true;
+          pairingData.guest_identifier = guestUser.phone;
+        } else {
+          // Eğer telefon numarası yoksa rastgele kimlik oluştur
+          const guestId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          pairingData.is_guest = true;
+          pairingData.guest_identifier = guestId;
+        }
+        
+        // Misafir kullanıcılar için player_id alanını NULL olarak bırakacağız
+        // NOT: Supabase migration ile tabloyu güncelleyin veya RLS politikalarınızı düzenleyin
+      } else if (userId) {
+        // Gerçek kullanıcı için player_id ekle
+        pairingData.player_id = userId;
+      } else {
+        throw new Error("Kullanıcı kimliği bulunamadı");
+      }
+      
+      console.log("Kaydedilecek veri:", pairingData);
+      
+      // Misafir kullanıcı için direkt SQL sorgusu kullanarak kaydet
+      if (isGuestUser) {
+        // Misafir kullanıcılar için özel sorgu kullan (player_id olmadan)
+        const { data, error } = await supabase.rpc('create_guest_device_pairing', {
+          p_selected_time: pairingData.selected_time,
+          p_selected_position: pairingData.selected_position,
+          p_selected_team: pairingData.selected_team,
+          p_device_id: pairingData.device_id,
+          p_is_guest: true,
+          p_guest_identifier: pairingData.guest_identifier
+        });
+        
+        if (error) {
+          console.error("RPC hatası:", error);
+          throw error;
+        }
+      } else {
+        // Normal kullanıcılar için standart insert kullan
+        const { data, error } = await deviceService.createDevicePairing(pairingData);
+        
+        if (error) {
+          // Eğer cihaz zaten alınmışsa yeni bir cihaz öner
+          if (error.code === '23505') { // Unique constraint violation
+            toast({ 
+              title: "Uyarı", 
+              description: "Bu cihaz başkası tarafından alındı. Yeni bir cihaz öneriliyor...",
+              variant: "destructive" 
+            });
+            
+            // Takım seçimini sıfırla ve tekrar cihaz önerisi al
+            setSelectedTeam("");
+            return;
+          } else {
+            console.error("Supabase hatası:", error);
+            throw error;
           }
         }
       }
       
-      // Her durumda başarılı gösterelim ve kullanıcıya bildiri yapalım
+      // Başarılı mesajı göster
       toast({ 
         title: "Başarılı", 
         description: `Rezervasyonunuz tamamlandı! Cihaz #${suggestedDeviceId} atandı.` 
@@ -159,17 +295,14 @@ const DevicePairing = () => {
       setIsCompleted(true);
       
     } catch (error: any) {
-      // Genel hata durumunu yakala
-      console.error("İşlem sırasında beklenmeyen hata:", error);
-      
-      // Hatayı bildirmek yerine işlemi yine de başarılı göster
-      toast({ 
-        title: "Başarılı", 
-        description: `Rezervasyonunuz tamamlandı! Cihaz #${suggestedDeviceId} atandı.` 
+      console.error("Eşleştirme tamamlanırken hata:", error);
+      toast({
+        title: "Hata",
+        description: error.message || "Eşleştirme sırasında bir hata oluştu.",
+        variant: "destructive"
       });
-      
-      // Tamamlandı durumunu güncelle
-      setIsCompleted(true);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -247,7 +380,7 @@ const DevicePairing = () => {
             <CardTitle className="text-xl mb-2">Takım Seçimi</CardTitle>
             <CardDescription className="mb-6">Hangi takımda oynamak istiyorsunuz?</CardDescription>
             <Select value={selectedTeam} onValueChange={(value) => setSelectedTeam(value as Team)}>
-              <SelectTrigger className="w-full bg-white/5 border-white/20">
+              <SelectTrigger className="w-full bg-white/5 border-white/20" disabled={isProcessing}>
                 <SelectValue placeholder="Takım seçin" />
               </SelectTrigger>
               <SelectContent>
@@ -256,6 +389,13 @@ const DevicePairing = () => {
                 ))}
               </SelectContent>
             </Select>
+            
+            {isProcessing && (
+              <div className="flex justify-center mt-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-gray-400">Uygun cihazlar kontrol ediliyor...</span>
+              </div>
+            )}
           </>
         );
       
@@ -284,6 +424,10 @@ const DevicePairing = () => {
                   <span className="font-medium">Takım:</span>
                   <span>{teams.find(t => t.value === selectedTeam)?.label}</span>
                 </div>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="font-medium">{identifierLabel}</span>
+                  <span>{identifierValue}</span>
+                </div>
                 <div className="flex justify-between pb-2">
                   <span className="font-medium">Atanan Cihaz:</span>
                   <span className="font-semibold text-green-400">#{suggestedDeviceId}</span>
@@ -301,7 +445,14 @@ const DevicePairing = () => {
                   : "Misafir takım için size atanan cihaz:"}
               </CardDescription>
               
-              <div className="flex items-center justify-center my-8">
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-4">
+                <div className="flex justify-between border-b border-white/10 pb-2 mb-2">
+                  <span className="font-medium">{identifierLabel}</span>
+                  <span>{identifierValue}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center my-6">
                 <div className="bg-primary/10 border border-primary/30 rounded-lg px-10 py-6 text-center">
                   <div className="text-lg text-gray-300 mb-2">Cihaz Numarası</div>
                   <div className="text-4xl font-bold text-primary">#{suggestedDeviceId}</div>
@@ -309,7 +460,7 @@ const DevicePairing = () => {
               </div>
               
               <div className="text-center text-sm text-gray-400 mt-4">
-                Bu cihaz numarası otomatik olarak atanmıştır. Lütfen eşleştirme öncesi kontrol ediniz.
+                Bu cihaz numarası, seçimleriniz ile ilişkilendirilmiştir.
               </div>
             </>
           );
@@ -351,15 +502,23 @@ const DevicePairing = () => {
                 <Button 
                   variant="outline"
                   onClick={handleBack}
-                  disabled={step === 1}
+                  disabled={step === 1 || isProcessing}
                   className="bg-white/5 border-white/20 text-white"
                 >
                   Geri
                 </Button>
                 <Button 
                   onClick={handleNext}
+                  disabled={isProcessing}
                 >
-                  {step < 4 ? "İleri" : "Tamamla"}
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      İşleniyor...
+                    </>
+                  ) : (
+                    step < 4 ? "İleri" : "Tamamla"
+                  )}
                 </Button>
               </>
             )}

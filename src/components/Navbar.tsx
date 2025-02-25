@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, User, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { ChevronDown, User, Settings, LogOut, LayoutDashboard, LogIn } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AuthModals from "./AuthModals";
@@ -25,7 +25,8 @@ const Navbar = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       // localStorage'da misafir durumunu kontrol et
-      const userType = localStorage.getItem('userType');
+      const guestUserJSON = localStorage.getItem('guestUser');
+      const guestUser = guestUserJSON ? JSON.parse(guestUserJSON) : null;
       
       if (session) {
         // Oturum açılmış kullanıcı
@@ -44,12 +45,12 @@ const Navbar = () => {
           setUserName(fullName || "Kullanıcı");
           setUserNickname(profiles.first_name?.toLowerCase() || "kullanici");
         }
-      } else if (userType === 'guest') {
-        // Misafir kullanıcı
+      } else if (guestUser && guestUser.isGuest) {
+        // Misafir kullanıcı - Yeni localStorage anahtarını kontrol ediyoruz
         setIsAuthenticated(true);
         setIsGuest(true);
         setUserName("Misafir");
-        setUserNickname("guest");
+        setUserNickname("misafir");
       } else {
         // Giriş yapmamış kullanıcı
         setIsAuthenticated(false);
@@ -70,7 +71,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     if (isGuest) {
       // Misafir için sadece localStorage temizle
-      localStorage.removeItem('userType');
+      localStorage.removeItem('guestUser');
       setIsAuthenticated(false);
       setIsGuest(false);
       toast({
@@ -95,6 +96,12 @@ const Navbar = () => {
         });
       }
     }
+  };
+
+  const handleAuthRedirect = (type: 'login' | 'register') => {
+    navigate('/auth');
+    // Auth sayfasına yönlendikten sonra gerekli modu belirlemek için localStorage kullanabilirsiniz
+    localStorage.setItem('authInitialMode', type);
   };
 
   return (
@@ -184,15 +191,18 @@ const Navbar = () => {
                 <div className="flex space-x-2">
                   <Button 
                     variant="ghost" 
-                    className="text-white hover:text-[#10B981] transition-colors"
+                    className="text-white hover:bg-white/5 transition-colors"
                     onClick={() => setIsLoginOpen(true)}
                   >
+                    <LogIn className="h-5 w-5 mr-1" />
                     Giriş Yap
                   </Button>
                   <Button 
                     variant="default"
+                    className="bg-primary hover:bg-primary/90"
                     onClick={() => setIsRegisterOpen(true)}
                   >
+                    <User className="h-5 w-5 mr-1" />
                     Kayıt Ol
                   </Button>
                 </div>

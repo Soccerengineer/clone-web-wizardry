@@ -326,9 +326,83 @@ export interface Database {
           }
         ]
       }
+      device_pairings: {
+        Row: {
+          id: string
+          player_id: string
+          selected_time: string
+          selected_position: string
+          selected_team: string
+          device_id: number
+          created_at: string
+          expiry_at: string | null
+          is_active: boolean
+          is_guest: boolean
+          guest_identifier: string | null
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          selected_time: string
+          selected_position: string
+          selected_team: string
+          device_id: number
+          created_at?: string
+          expiry_at?: string | null
+          is_active?: boolean
+          is_guest?: boolean
+          guest_identifier?: string | null
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          selected_time?: string
+          selected_position?: string
+          selected_team?: string
+          device_id?: number
+          created_at?: string
+          expiry_at?: string | null
+          is_active?: boolean
+          is_guest?: boolean
+          guest_identifier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_pairings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
+      active_device_pairings: {
+        Row: {
+          id: string
+          player_id: string
+          selected_time: string
+          selected_position: string
+          selected_team: string
+          device_id: number
+          created_at: string
+          expiry_at: string | null
+          is_active: boolean
+          is_guest: boolean
+          guest_identifier: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_pairings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

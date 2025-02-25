@@ -159,4 +159,124 @@ export const challengeService = {
       return { data: null, error };
     }
   }
+};
+
+// Cihaz eşleştirme işlemleri
+export const deviceService = {
+  // Cihaz eşleştirmesi oluştur
+  createDevicePairing: async (data: {
+    player_id: string;
+    selected_time: string;
+    selected_position: string;
+    selected_team: string;
+    device_id: number;
+    is_guest?: boolean;
+    guest_identifier?: string;
+  }) => {
+    return await supabase
+      .from('device_pairings')
+      .insert(data);
+  },
+  
+  // Belirli bir saatte aktif olarak atanmış cihazları getir
+  getActiveDevicesByTime: async (selected_time: string) => {
+    return await supabase
+      .from('active_device_pairings')
+      .select('device_id')
+      .eq('selected_time', selected_time);
+  },
+  
+  // Belirli bir kullanıcının aktif eşleştirmelerini getir
+  getUserActiveDevicePairings: async (playerId: string) => {
+    return await supabase
+      .from('active_device_pairings')
+      .select('*')
+      .eq('player_id', playerId);
+  },
+  
+  // Belirli bir saatte cihaz kontrolü yap ve boş bir cihaz numarası öner
+  // Aynı telefon numarasına sahip misafir kullanıcılar için aynı cihaz numarasını öner
+  suggestAvailableDeviceId: async (selected_time: string, selected_team: string) => {
+    try {
+      // Misafir kullanıcı bilgilerini localStorage'dan al
+      const guestUserJSON = localStorage.getItem('guestUser');
+      const guestUser = guestUserJSON ? JSON.parse(guestUserJSON) : null;
+      const userPhone = guestUser && guestUser.phone ? guestUser.phone : null;
+      
+      // Eğer telefon numarası varsa, bu kullanıcının daha önce rezervasyon yapıp yapmadığını kontrol et
+      if (userPhone) {
+        const { data: existingPairings, error: pairingError } = await supabase
+          .from('device_pairings')
+          .select('device_id')
+          .eq('guest_identifier', userPhone)
+          .eq('selected_time', selected_time)
+          .eq('is_active', true)
+          .limit(1);
+        
+        if (pairingError) throw pairingError;
+        
+        // Eğer aynı telefon numarası ile daha önce bir rezervasyon yapılmışsa, aynı cihaz ID'sini kullan
+        if (existingPairings && existingPairings.length > 0) {
+          return { data: existingPairings[0].device_id, error: null };
+        }
+      }
+      
+      // Belirli saatteki tüm aktif cihazları getir
+      const { data: activeDevices, error } = await supabase
+        .from('active_device_pairings')
+        .select('device_id')
+        .eq('selected_time', selected_time);
+      
+      if (error) throw error;
+      
+      // Aktif cihaz ID'lerini bir diziye ekle
+      const usedDeviceIds = activeDevices ? activeDevices.map(d => d.device_id) : [];
+      
+      // Takıma göre cihaz aralığını belirle
+      const deviceIdRange = selected_team === "ev_sahibi" 
+        ? [1, 2, 3, 4, 5, 6, 7] 
+        : [8, 9, 10, 11, 12, 13, 14];
+      
+      // Kullanılmayan cihazları bul
+      const availableDevices = deviceIdRange.filter(id => !usedDeviceIds.includes(id));
+      
+      // Eğer boş cihaz varsa birini telefon numarasına göre seç
+      if (availableDevices.length > 0) {
+        // Eğer telefon numarası varsa, telefon numarasından deterministik bir cihaz seç
+        if (userPhone) {
+          // Telefon numarasının son 2 hanesini al ve sayıya çevir
+          const lastTwoDigits = userPhone.replace(/\D/g, '').slice(-2);
+          const numericValue = parseInt(lastTwoDigits, 10);
+          
+          // Bu sayıyı mevcut cihaz indeksine çevir
+          const index = numericValue % availableDevices.length;
+          return { data: availableDevices[index], error: null };
+        } else {
+          // Telefon numarası yoksa rastgele bir cihaz seç
+          const randomIndex = Math.floor(Math.random() * availableDevices.length);
+          return { data: availableDevices[randomIndex], error: null };
+        }
+      } else {
+        // Eğer boş cihaz yoksa hata döndür
+        return { 
+          data: null, 
+          error: { message: "Bu saat için seçtiğiniz takımda boş cihaz kalmamıştır." } 
+        };
+      }
+    } catch (error) {
+      console.error("Cihaz önerisi alınırken hata:", error);
+      return { 
+        data: null, 
+        error: { message: "Cihaz önerisi alınırken bir hata oluştu." } 
+      };
+    }
+  },
+  
+  // Eşleştirmeyi iptal et (active = false yap)
+  cancelDevicePairing: async (pairingId: string) => {
+    return await supabase
+      .from('device_pairings')
+      .update({ is_active: false })
+      .eq('id', pairingId);
+  }
 }; 
