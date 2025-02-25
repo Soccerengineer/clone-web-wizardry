@@ -153,7 +153,7 @@ const DevicePairing = () => {
   const renderProgress = () => {
     return (
       <div className="flex mb-8">
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center">
             <div 
               className={`rounded-full h-10 w-10 flex items-center justify-center
@@ -162,7 +162,7 @@ const DevicePairing = () => {
             >
               {s}
             </div>
-            {s < 3 && (
+            {s < 4 && (
               <div 
                 className={`h-1 w-10 ${s < step ? 'bg-primary/80' : 'bg-gray-300'}`}
               ></div>
@@ -233,24 +233,22 @@ const DevicePairing = () => {
       case 4:
         return (
           <>
-            <CardTitle className="text-xl mb-6">Eşleştirme Özeti</CardTitle>
-            <div className="space-y-3">
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="font-medium">Saat:</span>
-                <span>{selectedTime}</span>
+            <CardTitle className="text-xl mb-2">Cihaz Bilgileri</CardTitle>
+            <CardDescription className="mb-6">
+              {selectedTeam === "ev_sahibi" 
+                ? "Ev sahibi takım için size atanan cihaz:" 
+                : "Misafir takım için size atanan cihaz:"}
+            </CardDescription>
+            
+            <div className="flex items-center justify-center my-8">
+              <div className="bg-primary/10 border border-primary/30 rounded-lg px-10 py-6 text-center">
+                <div className="text-lg text-gray-300 mb-2">Cihaz Numarası</div>
+                <div className="text-4xl font-bold text-primary">#{suggestedDeviceId}</div>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="font-medium">Pozisyon:</span>
-                <span>{positions.find(p => p.value === selectedPosition)?.label}</span>
-              </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="font-medium">Takım:</span>
-                <span>{teams.find(t => t.value === selectedTeam)?.label}</span>
-              </div>
-              <div className="flex justify-between border-b border-white/10 pb-2">
-                <span className="font-medium">Atanan Cihaz:</span>
-                <span className="font-semibold text-green-400">#{suggestedDeviceId}</span>
-              </div>
+            </div>
+            
+            <div className="text-center text-sm text-gray-400 mt-4">
+              Bu cihaz numarası otomatik olarak atanmıştır. Lütfen eşleştirme öncesi kontrol ediniz.
             </div>
           </>
         );

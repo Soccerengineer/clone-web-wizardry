@@ -1,19 +1,108 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AuthModals from "./AuthModals";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [userName, setUserName] = useState("Kullanıcı");
+  const [userNickname, setUserNickname] = useState("kullanici");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Kullanıcı durumunu kontrol et
+    const checkUser = async () => {
+      // Supabase oturumunu kontrol et
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // localStorage'da misafir durumunu kontrol et
+      const userType = localStorage.getItem('userType');
+      
+      if (session) {
+        // Oturum açılmış kullanıcı
+        setIsAuthenticated(true);
+        setIsGuest(false);
+        
+        // Kullanıcı bilgilerini çek
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profiles) {
+          const fullName = `${profiles.first_name || ''} ${profiles.last_name || ''}`.trim();
+          setUserName(fullName || "Kullanıcı");
+          setUserNickname(profiles.first_name?.toLowerCase() || "kullanici");
+        }
+      } else if (userType === 'guest') {
+        // Misafir kullanıcı
+        setIsAuthenticated(true);
+        setIsGuest(true);
+        setUserName("Misafir");
+        setUserNickname("guest");
+      } else {
+        // Giriş yapmamış kullanıcı
+        setIsAuthenticated(false);
+        setIsGuest(false);
+      }
+    };
+    
+    checkUser();
+    
+    // Auth durumu dinleyici
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      checkUser();
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    if (isGuest) {
+      // Misafir için sadece localStorage temizle
+      localStorage.removeItem('userType');
+      setIsAuthenticated(false);
+      setIsGuest(false);
+      toast({
+        title: "Çıkış yapıldı",
+        description: "Misafir oturumu sonlandırıldı."
+      });
+      navigate('/');
+    } else {
+      // Gerçek kullanıcı için supabase oturumunu sonlandır
+      try {
+        await supabase.auth.signOut();
+        toast({
+          title: "Çıkış yapıldı",
+          description: "Başarıyla çıkış yaptınız."
+        });
+        navigate('/');
+      } catch (error) {
+        toast({
+          title: "Hata",
+          description: "Çıkış yapılırken bir hata oluştu.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
 
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/10 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
+          <div className="flex items-center justify-between h-16">
             {/* Logo - Sol taraf */}
             <div className="flex-shrink-0">
               <Link to="/" className="flex items-center">
@@ -48,34 +137,38 @@ const Navbar = () => {
               </Button>
             </div>
 
-            {/* Giriş/Kayıt Butonları - Sağ taraf */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                className="text-white border-white/20 hover:bg-white/10"
-                onClick={() => setIsLoginOpen(true)}
-              >
-                GİRİŞ YAP
-              </Button>
-              <Button 
-                className="bg-[#10B981] hover:bg-[#10B981]/90 text-white"
-                onClick={() => setIsRegisterOpen(true)}
-              >
-                KAYIT OL
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <AuthModals 
-        isLoginOpen={isLoginOpen}
-        isRegisterOpen={isRegisterOpen}
-        onLoginClose={() => setIsLoginOpen(false)}
-        onRegisterClose={() => setIsRegisterOpen(false)}
-      />
-    </>
-  );
-};
-
-export default Navbar;
+            {/* Giriş/Kayıt veya Profil Dropdown - Sağ taraf */}
+            <div className="flex items-center space-x-4">
+              {isAuthenticated ? (
+                // Kullanıcı girişi yapılmışsa profil dropdown menüsü göster
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 px-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm font-medium text-white">{userName}</span>
+                        <span className="text-xs text-gray-400">@{userNickname}</span>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    {!isGuest && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Profil</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate('/settings')}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Ayarlar</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                      <LogOut className="mr-2 h-4 w-

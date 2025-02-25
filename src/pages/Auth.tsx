@@ -108,7 +108,17 @@ const Auth = () => {
   };
 
   const handleContinueAsGuest = () => {
-    navigate('/overview');
+    // Misafir olarak giriş yapıldığını bildir
+    toast({
+      title: "Misafir girişi yapıldı",
+      description: "Sınırlı özelliklerle devam ediyorsunuz.",
+    });
+    
+    // Kullanıcı durumunu oturum deposunda sakla
+    localStorage.setItem('userType', 'guest');
+    
+    // Cihaz eşleştirme sayfasına yönlendir
+    navigate('/device-pairing');
   };
 
   return (
