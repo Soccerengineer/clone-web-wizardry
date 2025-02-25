@@ -45,7 +45,7 @@ const UserLayout = ({
   }, {
     icon: Brain,
     label: "Kadro KUR AI (Beta)",
-    href: "/ai-squad-builder"
+    href: "/squad-builder"
   }, {
     icon: Target,
     label: "İddialar",

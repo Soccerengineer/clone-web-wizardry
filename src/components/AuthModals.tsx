@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,6 @@ const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginClose, onRegisterClose
         description: "Süper Saha'ya hoş geldiniz.",
       });
       onLoginClose();
-      navigate('/device-pairing');
     } catch (error: any) {
       toast({
         title: "Giriş başarısız",

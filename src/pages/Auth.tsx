@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Phone, User, LogIn } from "lucide-react";
@@ -19,19 +18,11 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/device-pairing');
+        navigate('/');
       }
     };
 
     checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/device-pairing');
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [navigate]);
 
   // Registration form state
@@ -61,9 +52,9 @@ const Auth = () => {
       try {
         toast({
           title: "Başarılı!",
-          description: "Doğrulama başarılı. Yönlendiriliyorsunuz...",
+          description: "Doğrulama başarılı.",
         });
-        navigate('/device-pairing');
+        navigate('/');
       } catch (error: any) {
         toast({
           title: "Hata",
@@ -94,9 +85,9 @@ const Auth = () => {
       try {
         toast({
           title: "Başarılı!",
-          description: "Doğrulama başarılı. Yönlendiriliyorsunuz...",
+          description: "Doğrulama başarılı.",
         });
-        navigate('/device-pairing');
+        navigate('/');
       } catch (error: any) {
         toast({
           title: "Hata",

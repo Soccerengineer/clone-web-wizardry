@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { ChevronDown, User, Settings, LogOut, LayoutDashboard } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AuthModals from "./AuthModals";
@@ -159,6 +158,10 @@ const Navbar = () => {
                   <DropdownMenuContent className="w-56" align="end">
                     {!isGuest && (
                       <>
+                        <DropdownMenuItem onClick={() => navigate('/overview')}>
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
                           <User className="mr-2 h-4 w-4" />
                           <span>Profil</span>

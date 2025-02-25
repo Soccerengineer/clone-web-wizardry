@@ -2,10 +2,43 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://kolqnwtkwxjgfkcnzzis.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvbHFud3Rrd3hqZ2ZrY256emlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MzcyNjUsImV4cCI6MjA1NTQxMzI2NX0.ekJ0gJym21sCd-59e33Y46UXoXiOqwExdh9E6_Naw3I";
+const supabaseUrl = "https://kolqnwtkwxjgfkcnzzis.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvbHFud3Rrd3hqZ2ZrY256emlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MzcyNjUsImV4cCI6MjA1NTQxMzI2NX0.ekJ0gJym21sCd-59e33Y46UXoXiOqwExdh9E6_Naw3I";
+
+// Supabase URL ve anonKey'in doğru şekilde tanımlandığını kontrol et
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase çevre değişkenleri bulunamadı. Lütfen .env dosyanızı kontrol edin.');
+  console.error('VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY tanımlanmalıdır.');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+// Bağlantı durumunu kontrol et
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase auth event:', event);
+  if (event === 'SIGNED_OUT') {
+    console.log('Kullanıcı çıkış yaptı');
+  } else if (event === 'SIGNED_IN') {
+    console.log('Kullanıcı giriş yaptı:', session?.user?.email);
+  }
+});
+
+// Bağlantı sağlığı kontrolü yapmak için basit bir fonksiyon
+export const checkSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Supabase bağlantı hatası:', error.message);
+      return { ok: false, error: error.message };
+    }
+    
+    return { ok: true, data };
+  } catch (err) {
+    console.error('Supabase bağlantısı sırasında beklenmeyen hata:', err);
+    return { ok: false, error: err instanceof Error ? err.message : 'Bilinmeyen hata' };
+  }
+};

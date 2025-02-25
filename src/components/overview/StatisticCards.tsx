@@ -1,61 +1,72 @@
-
+import { Trophy, Users, MapPin, Calendar } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Target, Trophy, Medal } from "lucide-react";
 
 interface StatisticCardsProps {
   totalMatches: number;
   mvpCount: number;
   medals: number;
   favoriteVenue: string;
+  isLoading?: boolean;
 }
 
-const StatisticCards = ({ totalMatches, mvpCount, medals, favoriteVenue }: StatisticCardsProps) => {
+const StatisticCards = ({ 
+  totalMatches, 
+  mvpCount, 
+  medals, 
+  favoriteVenue,
+  isLoading = false 
+}: StatisticCardsProps) => {
+  // Yükleme durumu için azaltılmış opasite
+  const opacityClass = isLoading ? 'opacity-70' : '';
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-full bg-primary/10">
-            <Target className="w-5 h-5 text-primary" />
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ${opacityClass}`}>
+      <Card className="p-4 bg-white/5 backdrop-blur-sm border-white/10">
+        <div className="flex items-center">
+          <div className="p-2 rounded-lg bg-primary/20 mr-4">
+            <Calendar className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm text-gray-400">Toplam Maç</h3>
-            <p className="text-2xl font-bold text-white">{totalMatches}</p>
+            <p className="text-sm text-gray-400">Toplam Maç</p>
+            <p className="text-2xl font-semibold text-white">{totalMatches}</p>
           </div>
         </div>
       </Card>
 
-      <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-full bg-primary/10">
-            <Trophy className="w-5 h-5 text-primary" />
+      <Card className="p-4 bg-white/5 backdrop-blur-sm border-white/10">
+        <div className="flex items-center">
+          <div className="p-2 rounded-lg bg-primary/20 mr-4">
+            <Trophy className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm text-gray-400">MVP</h3>
-            <p className="text-2xl font-bold text-white">{mvpCount}</p>
+            <p className="text-sm text-gray-400">MVP Ödülü</p>
+            <p className="text-2xl font-semibold text-white">{mvpCount}</p>
           </div>
         </div>
       </Card>
 
-      <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-full bg-primary/10">
-            <Medal className="w-5 h-5 text-primary" />
+      <Card className="p-4 bg-white/5 backdrop-blur-sm border-white/10">
+        <div className="flex items-center">
+          <div className="p-2 rounded-lg bg-primary/20 mr-4">
+            <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm text-gray-400">Madalya</h3>
-            <p className="text-2xl font-bold text-white">{medals}</p>
+            <p className="text-sm text-gray-400">Toplam Madalya</p>
+            <p className="text-2xl font-semibold text-white">{medals}</p>
           </div>
         </div>
       </Card>
 
-      <Card className="p-6 bg-white/5 backdrop-blur-sm border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-full bg-primary/10">
-            <Target className="w-5 h-5 text-primary" />
+      <Card className="p-4 bg-white/5 backdrop-blur-sm border-white/10">
+        <div className="flex items-center">
+          <div className="p-2 rounded-lg bg-primary/20 mr-4">
+            <MapPin className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm text-gray-400">Favori Tesis</h3>
-            <p className="text-lg font-bold text-white">{favoriteVenue}</p>
+            <p className="text-sm text-gray-400">Favori Mekan</p>
+            <p className="text-2xl font-semibold text-white" title={favoriteVenue}>
+              {favoriteVenue.length > 15 ? `${favoriteVenue.substring(0, 15)}...` : favoriteVenue}
+            </p>
           </div>
         </div>
       </Card>

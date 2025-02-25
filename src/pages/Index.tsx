@@ -4,35 +4,68 @@ import HowItWorks from "@/components/HowItWorks";
 import WhatWeOffer from "@/components/WhatWeOffer";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Settings, LogOut, Play } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { Play } from "lucide-react";
+import { useState, useEffect } from "react";
 import GameStartModal from "@/components/GameStartModal";
+import { useAuth } from "@/controllers/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
   const [isGameStartModalOpen, setIsGameStartModalOpen] = useState(false);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
-  const handleLogout = async () => {
+  // Kimlik durumunu başlangıçta kontrol et
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    setLoadingUser(true);
     try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Çıkış yapıldı",
-        description: "Başarıyla çıkış yaptınız."
-      });
-      navigate('/');
-    } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Çıkış yapılırken bir hata oluştu.",
-        variant: "destructive"
-      });
+      // Supabase'den doğrudan kullanıcı bilgisini al
+      const { data, error } = await supabase.auth.getSession();
+      
+      console.log('Oturum kontrolü yapılıyor...');
+      console.log('Oturum:', data?.session);
+      
+      // Misafir oturumu kontrol et
+      const isGuestUser = localStorage.getItem('userType') === 'guest';
+      console.log('Misafir kullanıcı mı:', isGuestUser);
+      
+      // Kullanıcı oturum durumunu belirle
+      setIsUserLoggedIn(!!(data?.session || isGuestUser));
+    } catch (err) {
+      console.error('Kimlik doğrulama kontrolü sırasında hata:', err);
+      setIsUserLoggedIn(false);
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  const handleGameStart = async () => {
+    try {
+      // Kimlik doğrulama durumunu tekrar kontrol et
+      const { data, error } = await supabase.auth.getSession();
+      const isGuestUser = localStorage.getItem('userType') === 'guest';
+      
+      console.log('Maça Başla tıklandı');
+      console.log('Oturum:', data?.session);
+      console.log('Misafir kullanıcı mı:', isGuestUser);
+      
+      // Eğer giriş yapılmış veya misafir kullanıcı ise
+      if (data?.session || isGuestUser) {
+        console.log('Kullanıcı oturum açmış, /device-pairing sayfasına yönlendiriliyor...');
+        navigate('/device-pairing');
+      } else {
+        console.log('Kullanıcı oturum açmamış, /auth sayfasına yönlendiriliyor...');
+        navigate('/auth');
+      }
+    } catch (err) {
+      console.error('Maça başla sırasında hata:', err);
+      // Hata durumunda auth sayfasına yönlendir
+      navigate('/auth');
     }
   };
 
@@ -43,39 +76,6 @@ const Index = () => {
       
       <div className="relative">
         <Navbar />
-        <div className="ml-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 px-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium text-white">Kullanıcı Adı</span>
-                  <span className="text-xs text-gray-400">@nickname</span>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end">
-              <DropdownMenuItem onClick={() => navigate('/overview')}>
-                <User className="mr-2 h-4 w-4" />
-                <span>Dashboard</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Ayarlar</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-500">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Çıkış Yap</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </div>
       
       <main className="relative">
@@ -93,7 +93,7 @@ const Index = () => {
 
               <Button 
                 className="w-full sm:w-auto px-8 bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-lg sm:text-xl py-6 sm:py-8 transform transition-all duration-200 hover:scale-105"
-                onClick={() => navigate('/auth')}
+                onClick={handleGameStart}
               >
                 <Play className="mr-2 h-6 w-6 sm:h-8 sm:w-8" />
                 MAÇA BAŞLA
