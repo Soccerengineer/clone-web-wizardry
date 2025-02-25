@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
+import { CheckCircle2 } from "lucide-react";
 
 // Pozisyonlar için tip
 type Position = "forvet" | "ikinci_forvet" | "orta_saha" | "sag_bek" | "sol_bek" | "stoper";
@@ -26,11 +27,15 @@ const DevicePairing = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | "">("");
   const [suggestedDeviceId, setSuggestedDeviceId] = useState<number | null>(null);
   
+  // Rezervasyon tamamlandı durumu
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  
   // Giriş kontrolü
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+      // Supabase oturumu yoksa, localStorage'da misafir durumunu kontrol et
+      if (!data.session && localStorage.getItem('userType') !== 'guest') {
         navigate("/auth");
       }
     };
@@ -109,37 +114,31 @@ const DevicePairing = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id;
       
-      if (!userId) {
-        toast({ 
-          title: "Hata", 
-          description: "Kullanıcı girişi yapılmamış. Lütfen giriş yapın.", 
-          variant: "destructive" 
-        });
-        navigate('/auth');
-        return;
-      }
-      
       // Eşleştirme bilgilerini kaydet
       // Not: Bu kısım gerçek API entegrasyonuna göre düzenlenmelidir
-      const { error } = await supabase
-        .from('player_stats')
-        .insert({
-          player_id: userId,
-          position: selectedPosition === "ikinci_forvet" ? "forward" : 
-                   selectedPosition === "orta_saha" ? "midfielder" :
-                   selectedPosition === "sag_bek" || selectedPosition === "sol_bek" || selectedPosition === "stoper" ? "defender" : "forward",
-          // Diğer gerekli alanlar burada eklenebilir
-        });
+      if (userId) {
+        const { error } = await supabase
+          .from('player_stats')
+          .insert({
+            player_id: userId,
+            position: selectedPosition === "ikinci_forvet" ? "forward" : 
+                     selectedPosition === "orta_saha" ? "midfielder" :
+                     selectedPosition === "sag_bek" || selectedPosition === "sol_bek" || selectedPosition === "stoper" ? "defender" : "forward",
+            // Diğer gerekli alanlar burada eklenebilir
+          });
+        
+        if (error) throw error;
+      }
       
-      if (error) throw error;
-      
+      // Kullanıcıya bildirim göster
       toast({ 
         title: "Başarılı", 
-        description: `Eşleştirme tamamlandı! Cihaz #${suggestedDeviceId} atandı.` 
+        description: `Rezervasyonunuz tamamlandı! Cihaz #${suggestedDeviceId} atandı.` 
       });
       
-      // Ana sayfaya yönlendir
-      navigate('/overview');
+      // Tamamlandı durumunu güncelle
+      setIsCompleted(true);
+      
     } catch (error: any) {
       toast({ 
         title: "Hata", 
@@ -147,6 +146,11 @@ const DevicePairing = () => {
         variant: "destructive" 
       });
     }
+  };
+  
+  // Ana sayfaya dönme
+  const handleGoHome = () => {
+    navigate('/');
   };
   
   // İlerleme durumu
@@ -231,27 +235,60 @@ const DevicePairing = () => {
         );
       
       case 4:
-        return (
-          <>
-            <CardTitle className="text-xl mb-2">Cihaz Bilgileri</CardTitle>
-            <CardDescription className="mb-6">
-              {selectedTeam === "ev_sahibi" 
-                ? "Ev sahibi takım için size atanan cihaz:" 
-                : "Misafir takım için size atanan cihaz:"}
-            </CardDescription>
-            
-            <div className="flex items-center justify-center my-8">
-              <div className="bg-primary/10 border border-primary/30 rounded-lg px-10 py-6 text-center">
-                <div className="text-lg text-gray-300 mb-2">Cihaz Numarası</div>
-                <div className="text-4xl font-bold text-primary">#{suggestedDeviceId}</div>
+        if (isCompleted) {
+          return (
+            <>
+              <div className="text-center">
+                <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                <CardTitle className="text-xl mb-3">Rezervasyonunuz Tamamlandı!</CardTitle>
+                <CardDescription className="mb-8 text-base">
+                  Cihazınızı görevliden teslim alıp maça başlayabilirsiniz.
+                </CardDescription>
               </div>
-            </div>
-            
-            <div className="text-center text-sm text-gray-400 mt-4">
-              Bu cihaz numarası otomatik olarak atanmıştır. Lütfen eşleştirme öncesi kontrol ediniz.
-            </div>
-          </>
-        );
+              
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="font-medium">Saat:</span>
+                  <span>{selectedTime}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="font-medium">Pozisyon:</span>
+                  <span>{positions.find(p => p.value === selectedPosition)?.label}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="font-medium">Takım:</span>
+                  <span>{teams.find(t => t.value === selectedTeam)?.label}</span>
+                </div>
+                <div className="flex justify-between pb-2">
+                  <span className="font-medium">Atanan Cihaz:</span>
+                  <span className="font-semibold text-green-400">#{suggestedDeviceId}</span>
+                </div>
+              </div>
+            </>
+          );
+        } else {
+          return (
+            <>
+              <CardTitle className="text-xl mb-2">Cihaz Bilgileri</CardTitle>
+              <CardDescription className="mb-6">
+                {selectedTeam === "ev_sahibi" 
+                  ? "Ev sahibi takım için size atanan cihaz:" 
+                  : "Misafir takım için size atanan cihaz:"}
+              </CardDescription>
+              
+              <div className="flex items-center justify-center my-8">
+                <div className="bg-primary/10 border border-primary/30 rounded-lg px-10 py-6 text-center">
+                  <div className="text-lg text-gray-300 mb-2">Cihaz Numarası</div>
+                  <div className="text-4xl font-bold text-primary">#{suggestedDeviceId}</div>
+                </div>
+              </div>
+              
+              <div className="text-center text-sm text-gray-400 mt-4">
+                Bu cihaz numarası otomatik olarak atanmıştır. Lütfen eşleştirme öncesi kontrol ediniz.
+              </div>
+            </>
+          );
+        }
       
       default:
         return null;
@@ -269,7 +306,7 @@ const DevicePairing = () => {
         
         <Card className="max-w-xl mx-auto bg-white/10 backdrop-blur-lg border-white/20 text-white">
           <CardHeader className="pb-0">
-            {renderProgress()}
+            {!isCompleted && renderProgress()}
           </CardHeader>
           
           <CardContent className="pt-6">
@@ -277,19 +314,30 @@ const DevicePairing = () => {
           </CardContent>
           
           <CardFooter className="flex justify-between">
-            <Button 
-              variant="outline"
-              onClick={handleBack}
-              disabled={step === 1}
-              className="bg-white/5 border-white/20 text-white"
-            >
-              Geri
-            </Button>
-            <Button 
-              onClick={handleNext}
-            >
-              {step < 4 ? "İleri" : "Tamamla"}
-            </Button>
+            {isCompleted ? (
+              <Button 
+                className="w-full"
+                onClick={handleGoHome}
+              >
+                Ana Sayfaya Dön
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={step === 1}
+                  className="bg-white/5 border-white/20 text-white"
+                >
+                  Geri
+                </Button>
+                <Button 
+                  onClick={handleNext}
+                >
+                  {step < 4 ? "İleri" : "Tamamla"}
+                </Button>
+              </>
+            )}
           </CardFooter>
         </Card>
       </div>
