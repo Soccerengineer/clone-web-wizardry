@@ -171,4 +171,42 @@ const Navbar = () => {
                       </>
                     )}
                     <DropdownMenuItem onClick={handleLogout} className="text-red-500">
-                      <LogOut className="mr-2 h-4 w-
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Çıkış Yap</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                // Giriş yapılmamışsa login/register butonları göster
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    className="text-white hover:text-[#10B981] transition-colors"
+                    onClick={() => setIsLoginOpen(true)}
+                  >
+                    Giriş Yap
+                  </Button>
+                  <Button 
+                    variant="default"
+                    onClick={() => setIsRegisterOpen(true)}
+                  >
+                    Kayıt Ol
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <AuthModals 
+        isLoginOpen={isLoginOpen}
+        isRegisterOpen={isRegisterOpen}
+        onLoginClose={() => setIsLoginOpen(false)}
+        onRegisterClose={() => setIsRegisterOpen(false)}
+      />
+    </>
+  );
+};
+
+export default Navbar;
