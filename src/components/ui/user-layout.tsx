@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { LayoutDashboard, LineChart, Users, Trophy, Award, CalendarDays, Settings, LogOut, User, Brain, Target, Home } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarSeparator } from "@/components/ui/sidebar";
@@ -16,51 +16,68 @@ const UserLayout = ({ children }: UserLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [userName, setUserName] = useState("Kullanıcı");
+  const [userName, setUserName] = useState("Süper Oyuncu");
   const [avatarUrl, setAvatarUrl] = useState("/placeholder.svg");
 
-  useEffect(() => {
-    // Kullanıcı bilgilerini yükle
-    const loadUserData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        try {
-          // Profil tablosundan kullanıcı bilgilerini al
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, avatar_url')
-            .eq('id', session.user.id)
-            .single();
+  // Kullanıcı bilgilerini yükleme işlevini ayrı bir fonksiyon olarak tanımla
+  const loadUserData = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      try {
+        // Profil tablosundan kullanıcı bilgilerini al - sadece nickname'e bak
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('avatar_url, nickname')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile) {
+          // Sadece nickname'i kontrol et, yoksa "Süper Oyuncu" kullan
+          setUserName(profile.nickname || "Süper Oyuncu");
           
-          if (profile) {
-            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-            setUserName(fullName || "Kullanıcı");
-            if (profile.avatar_url) {
-              setAvatarUrl(profile.avatar_url);
+          if (profile.avatar_url) {
+            setAvatarUrl(profile.avatar_url);
+          }
+        } else {
+          // Metadata'dan bilgileri al - sadece nickname'e bak
+          const metadata = session.user.user_metadata;
+          if (metadata && metadata.nickname) {
+            setUserName(metadata.nickname);
+            
+            if (metadata.avatar_url) {
+              setAvatarUrl(metadata.avatar_url);
             }
           } else {
-            // Metadata'dan bilgileri al
-            const metadata = session.user.user_metadata;
-            if (metadata) {
-              const firstName = metadata.first_name || '';
-              const lastName = metadata.last_name || '';
-              const fullName = `${firstName} ${lastName}`.trim();
-              setUserName(fullName || "Kullanıcı");
-              
-              if (metadata.avatar_url) {
-                setAvatarUrl(metadata.avatar_url);
-              }
-            }
+            // Her durumda varsayılan "Süper Oyuncu" kullan
+            setUserName("Süper Oyuncu");
           }
-        } catch (error) {
-          console.error("Kullanıcı bilgileri yüklenirken hata:", error);
         }
+      } catch (error) {
+        console.error("Kullanıcı bilgileri yüklenirken hata:", error);
+        // Hata durumunda varsayılan değer
+        setUserName("Süper Oyuncu");
       }
-    };
-    
-    loadUserData();
+    }
   }, []);
+  
+  // Auth state değişikliğini dinle
+  useEffect(() => {
+    // Sayfa yüklendiğinde kullanıcı bilgilerini yükle
+    loadUserData();
+    
+    // Auth durumu değişikliklerini dinle
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
+        loadUserData();
+      }
+    });
+    
+    // Cleanup subscription
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [loadUserData]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Genel Bakış", href: "/overview" },
@@ -127,7 +144,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
               </SidebarGroup>
             </SidebarContent>
 
-            {/* Footer with Profile and Home Button */}
+            {/* Footer with Profile */}
             <div className="mt-auto border-t border-white/10">
               {/* Profile Dropdown */}
               <div className="p-4">
@@ -162,12 +179,6 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-
-              {/* Home Button */}
-              <Button variant="ghost" className="w-full flex items-center gap-2 p-4 text-gray-300 hover:text-white hover:bg-white/5" onClick={() => navigate('/')}>
-                <Home className="h-5 w-5" />
-                <span>Ana Sayfaya Geri Dön</span>
-              </Button>
             </div>
           </div>
         </Sidebar>

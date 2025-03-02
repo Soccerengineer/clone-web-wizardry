@@ -28,7 +28,7 @@ USING (auth.uid() = player_id OR is_guest = true);
 -- Kullanıcılar sadece kendi eşleştirmelerini ekleyebilir
 CREATE POLICY "Kullanıcılar kendi cihaz eşleştirmelerini ekleyebilir" 
 ON device_pairings FOR INSERT 
-WITH CHECK (auth.uid() = player_id OR is_guest = true);
+WITH CHECK (auth.uid() = player_id);
 
 -- Kullanıcılar sadece kendi eşleştirmelerini düzenleyebilir (aktif/pasif yapabilir)
 CREATE POLICY "Kullanıcılar kendi cihaz eşleştirmelerini güncelleyebilir" 
@@ -51,16 +51,41 @@ BEFORE INSERT ON device_pairings
 FOR EACH ROW
 EXECUTE FUNCTION set_expiry_for_device_pairing();
 
--- Görünüm oluştur: Aktif cihaz eşleştirmeleri
+-- Aktif eşleştirmeleri gösteren görünümler
+-- Tüm aktif cihaz eşleştirmeleri
 CREATE OR REPLACE VIEW active_device_pairings AS
-SELECT * FROM device_pairings
-WHERE is_active = true AND (expiry_at IS NULL OR expiry_at > now());
+SELECT *
+FROM device_pairings
+WHERE (expiry_at > now() OR expiry_at IS NULL) AND is_active = true;
+
+-- Aktif cihazları gösteren basitleştirilmiş görünüm
+CREATE OR REPLACE VIEW active_devices AS
+SELECT device_id, selected_time
+FROM device_pairings
+WHERE (expiry_at > now() OR expiry_at IS NULL) AND is_active = true;
+
+-- Cihaz eşleştirme sorgusuna yardımcı fonksiyon
+CREATE OR REPLACE FUNCTION check_device_pairing_exists(
+  p_time VARCHAR,
+  p_device_id INTEGER
+) RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM active_device_pairings
+    WHERE selected_time = p_time AND device_id = p_device_id
+  );
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   first_name TEXT,
   last_name TEXT,
+  nickname TEXT,
   avatar_url TEXT,
+  phone_number TEXT,
+  email TEXT,
+  user_type TEXT DEFAULT 'regular',
   updated_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
@@ -82,12 +107,29 @@ USING (auth.uid() = id);
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, first_name, last_name, avatar_url)
+  INSERT INTO public.profiles (
+    id, 
+    first_name, 
+    last_name, 
+    nickname, 
+    avatar_url, 
+    phone_number, 
+    email,
+    user_type
+  )
   VALUES (
     new.id,
-    new.raw_user_meta_data->>'first_name',
-    new.raw_user_meta_data->>'last_name',
-    new.raw_user_meta_data->>'avatar_url'
+    COALESCE(new.raw_user_meta_data->>'first_name', 'Süper'),
+    COALESCE(new.raw_user_meta_data->>'last_name', 'Oyuncu'),
+    COALESCE(new.raw_user_meta_data->>'nickname', NULL),
+    new.raw_user_meta_data->>'avatar_url',
+    new.phone,
+    new.email,
+    CASE 
+      WHEN new.phone IS NOT NULL THEN 'phone_user'
+      WHEN new.email IS NOT NULL THEN 'email_user'
+      ELSE 'regular'
+    END
   );
   RETURN new;
 END;

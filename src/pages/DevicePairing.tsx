@@ -38,38 +38,34 @@ const DevicePairing = () => {
   const [identifierLabel, setIdentifierLabel] = useState<string>('Kullanıcı:');
   const [identifierValue, setIdentifierValue] = useState<string>('-');
   
-  // Kullanıcı oturum kontrolü
+  // Giriş kontrolü
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
       
-      if (data.session?.user.id) {
-        setUserId(data.session.user.id);
-        
-        // Kullanıcının profil kaydını kontrol et
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.session.user.id)
-          .single();
-        
-        // Profil yoksa oluştur
-        if (error || !profileData) {
-          // Profil oluştur
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.session.user.id,
-              first_name: 'İsimsiz',
-              last_name: 'Kullanıcı',
-              created_at: new Date()
-            });
-          
-          if (insertError) {
-            console.error('Profil oluşturulamadı:', insertError);
-          }
-        }
+      // localStorage'da misafir durumunu kontrol et (yeni localStorage anahtarıyla)
+      const guestUserJSON = localStorage.getItem('guestUser');
+      const guestUser = guestUserJSON ? JSON.parse(guestUserJSON) : null;
+      
+      // Kullanıcı bilgilerini kaydet
+      const isGuest = guestUser && guestUser.isGuest;
+      setIsGuestUser(isGuest);
+      setUserId(data.session?.user.id || null);
+      
+      // Kullanıcı tipine göre identifier bilgilerini ayarla
+      if (isGuest) {
+        setIdentifierLabel('Misafir:');
+        setIdentifierValue('Misafir');  // Telefon numarası yerine sadece "Misafir" yazacak
+      } else if (data.session?.user.id) {
+        setIdentifierLabel('Kullanıcı:');
+        fetchUserInfo(data.session.user.id);
       } else {
+        setIdentifierLabel('Kullanıcı:');
+        setIdentifierValue('-');
+      }
+      
+      // Supabase oturumu yoksa ve misafir değilse yönlendir
+      if (!data.session && !guestUser) {
         navigate("/auth");
       }
     };

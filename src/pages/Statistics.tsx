@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { getUserStatistics, UserStatistics } from "@/services/statistics.service";
 import { useEffect, useState } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Statistics = () => {
   const { toast } = useToast();
@@ -18,6 +19,7 @@ const Statistics = () => {
     const loadStatistics = async () => {
       setIsLoading(true);
       try {
+        console.log("İstatistik verileri getiriliyor...");
         const { data, error } = await getUserStatistics();
         
         if (error) {
@@ -28,10 +30,23 @@ const Statistics = () => {
             description: "İstatistikler yüklenirken bir hata oluştu."
           });
         } else if (data) {
+          console.log("Alınan istatistik verileri:", data);
           setUserStats(data);
+        } else {
+          console.warn("İstatistik verisi bulunamadı veya boş döndü");
+          toast({
+            variant: "warning",
+            title: "Uyarı",
+            description: "İstatistik verisi bulunamadı."
+          });
         }
       } catch (err) {
-        console.error("İstatistik yükleme hatası:", err);
+        console.error("İstatistik yükleme hatası (Exception):", err);
+        toast({
+          variant: "destructive",
+          title: "Hata",
+          description: "Veriler yüklenirken beklenmeyen bir hata oluştu."
+        });
       } finally {
         setIsLoading(false);
       }
@@ -43,18 +58,18 @@ const Statistics = () => {
   // Örnek fiziksel istatistikler (gerçek verilerle değiştirilecek)
   const physicalStats = {
     distance: `${userStats?.shots || 0}km`,
-    sprint: userStats?.matches_played.toString() || "0",
+    sprint: userStats?.matches_played ? userStats.matches_played.toString() : "0",
     avgSprint: `${userStats?.pass_accuracy || 0}km/h`,
     maxSprint: `${userStats?.tackles_won || 0}km/h`,
-    activityTime: `${userStats?.matches_played * 90 || 0}min`
+    activityTime: `${userStats?.matches_played ? userStats.matches_played * 90 : 0}min`
   };
 
   // Teknik istatistikler
   const technicalStats = {
-    shots: userStats?.shots.toString() || "0",
-    avgShotSpeed: `${Math.round((userStats?.shots_on_target || 0) / (userStats?.shots || 1) * 100)}%`,
+    shots: userStats?.shots ? userStats.shots.toString() : "0",
+    avgShotSpeed: `${Math.round(((userStats?.shots_on_target || 0) / (userStats?.shots || 1)) * 100)}%`,
     maxShotSpeed: `${userStats?.goals_scored || 0}`,
-    passes: userStats?.pass_accuracy.toString() + "%" || "0%", 
+    passes: userStats?.pass_accuracy ? userStats.pass_accuracy.toString() + "%" : "0%", 
     possession: `${userStats?.possession_avg || 0}%`
   };
 
@@ -101,26 +116,7 @@ const Statistics = () => {
       <div className="space-y-8">
         {userStats ? (
           <>
-            {/* Özet İstatistikler */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-800 rounded-lg">
-              <div className="text-center p-4 bg-gray-700 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-300">Maçlar</h3>
-                <p className="text-2xl font-bold text-white">{userStats.matches_played}</p>
-              </div>
-              <div className="text-center p-4 bg-gray-700 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-300">Goller</h3>
-                <p className="text-2xl font-bold text-white">{userStats.goals_scored}</p>
-              </div>
-              <div className="text-center p-4 bg-gray-700 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-300">Galibiyet</h3>
-                <p className="text-2xl font-bold text-white">{userStats.matches_won}</p>
-              </div>
-              <div className="text-center p-4 bg-gray-700 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-300">Mağlubiyet</h3>
-                <p className="text-2xl font-bold text-white">{userStats.matches_lost}</p>
-              </div>
-            </div>
-
+            {/* Özet İstatistikler bölümü kaldırıldı */}
             <PhysicalStats stats={physicalStats} />
             <TechnicalStats stats={technicalStats} />
             <StatisticsCharts sprintData={sprintData} shotData={shotData} />
@@ -137,4 +133,12 @@ const Statistics = () => {
   );
 };
 
-export default Statistics;
+const StatisticsPage = () => {
+  return (
+    <ErrorBoundary>
+      <Statistics />
+    </ErrorBoundary>
+  );
+};
+
+export default StatisticsPage;

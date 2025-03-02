@@ -84,17 +84,25 @@ export interface UserMatch {
  */
 export const getUserStatistics = async (userId?: string) => {
   try {
+    console.log("getUserStatistics çağrıldı, userId:", userId);
+    
     if (!userId) {
+      console.log("Kullanıcı ID'si verilmedi, oturum açmış kullanıcı kontrol ediliyor...");
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
+        console.error("Oturum açmış kullanıcı bulunamadı");
         return { 
           data: null, 
           error: new Error('Kullanıcı oturumu bulunamadı') 
         };
       }
+      
       userId = user.id;
+      console.log("Oturum açmış kullanıcı ID'si:", userId);
     }
 
+    console.log("user_statistics tablosundan veri çekiliyor, user_id:", userId);
     const { data, error } = await supabase
       .from('user_statistics')
       .select('*')
@@ -106,9 +114,16 @@ export const getUserStatistics = async (userId?: string) => {
       return { data: null, error };
     }
 
+    if (!data) {
+      console.warn("Kullanıcı için istatistik verisi bulunamadı:", userId);
+      // Veri bulunamadı ama hata da yok - birçok sistemde normal bir durum
+      return { data: null, error: null };
+    }
+
+    console.log("Kullanıcı istatistikleri başarıyla getirildi:", data);
     return { data, error: null };
   } catch (err) {
-    console.error('Kullanıcı istatistikleri getirme hatası:', err);
+    console.error('Kullanıcı istatistikleri getirme hatası (Exception):', err);
     return { 
       data: null, 
       error: err instanceof Error ? err : new Error('Beklenmeyen bir hata oluştu') 

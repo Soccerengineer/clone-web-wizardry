@@ -11,8 +11,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nickname: "",
-    firstName: "",
-    lastName: "",
     email: "",
     phone: "",
   });
@@ -38,29 +36,23 @@ const Profile = () => {
         const email = session.user.email || "";
         const phone = session.user.phone || "";
         
-        // Metadata veya profil veritabanından isim bilgilerini alın
-        let firstName = "";
-        let lastName = "";
+        // Nickname bilgilerini al
         let nickname = "";
         
         try {
           // Önce profil tablosundan deneyin
           const { data: profileData, error } = await supabase
             .from('profiles')
-            .select('*')
+            .select('nickname')
             .eq('id', session.user.id)
             .single();
           
           if (profileData) {
-            firstName = profileData.first_name || "";
-            lastName = profileData.last_name || "";
             nickname = profileData.nickname || "";
           } else {
             // Metadata'dan alın
             const metadata = session.user.user_metadata;
             if (metadata) {
-              firstName = metadata.first_name || "";
-              lastName = metadata.last_name || "";
               nickname = metadata.nickname || "";
             }
           }
@@ -69,17 +61,13 @@ const Profile = () => {
           // Hata durumunda metadata'dan almayı deneyin
           const metadata = session.user.user_metadata;
           if (metadata) {
-            firstName = metadata.first_name || "";
-            lastName = metadata.last_name || "";
             nickname = metadata.nickname || "";
           }
         }
         
         // Form verilerini ayarla
         setFormData({
-          nickname: nickname || firstName.toLowerCase() || "superoyuncu",
-          firstName,
-          lastName,
+          nickname: nickname || session.user.id.substring(0, 8),
           email,
           phone,
         });
@@ -115,13 +103,10 @@ const Profile = () => {
         return;
       }
       
-      // User metadata'yı güncelle
+      // User metadata'yı güncelle - sadece nickname değişiyor
       const { error: metadataError } = await supabase.auth.updateUser({
         data: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          nickname: formData.nickname,
-          full_name: `${formData.firstName} ${formData.lastName}`.trim()
+          nickname: formData.nickname
         }
       });
       
@@ -137,32 +122,26 @@ const Profile = () => {
       // Eğer profiles tablosu varsa ve kullanıcı kaydı yoksa, yeni kayıt oluştur
       if (!existingProfile) {
         try {
-          // Profil tablosu varsa upsert yap (insert veya update)
+          // Profil tablosu varsa nickname'i ekle
           const { error: profileError } = await supabase
             .from('profiles')
             .upsert({
               id: session.user.id,
-              first_name: formData.firstName,
-              last_name: formData.lastName,
               nickname: formData.nickname,
               updated_at: new Date().toISOString()
             });
           
           if (profileError) {
             console.warn("Profil güncellenemedi, muhtemelen tablo yok:", profileError.message);
-            // Profil güncellenemedi ama metadata güncellendi, o yüzden başarılı sayalım
           }
         } catch (error) {
           console.warn("Profil tablosu erişimi başarısız, devam ediliyor:", error);
-          // Profiles tablosu yoksa veya erişilemiyorsa, sadece metadata ile devam et
         }
       } else {
-        // Profil tablosunu güncelle
+        // Profil tablosunu güncelle - sadece nickname değişiyor
         const { error: profileUpdateError } = await supabase
           .from('profiles')
           .update({
-            first_name: formData.firstName,
-            last_name: formData.lastName,
             nickname: formData.nickname,
             updated_at: new Date().toISOString()
           })
@@ -173,23 +152,12 @@ const Profile = () => {
         }
       }
       
-      // Auth state değişikliğini zorlayarak UI'nin hemen güncellenmesini sağla
-      const currentSession = await supabase.auth.getSession();
-      if (currentSession.data.session) {
-        // Session refresh et
-        await supabase.auth.refreshSession();
-        
-        // Auth state değişikliği eventi tetikle
-        supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'USER_UPDATED') {
-            console.log('Kullanıcı güncellendi, UI yenileniyor');
-          }
-        });
-      }
+      // Auth state değişikliğini zorla
+      await supabase.auth.refreshSession();
       
       toast({
         title: "Başarılı",
-        description: "Profil bilgileriniz güncellendi."
+        description: "Kullanıcı adınız güncellendi."
       });
       
       // Sayfayı yenileme - UI'ın hemen güncellenmesi için
@@ -226,31 +194,9 @@ const Profile = () => {
                 }
                 className="bg-white/5 border-white/10"
                 disabled={loading}
+                placeholder="Tercih ettiğiniz kullanıcı adını girin"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400">Ad</label>
-                <Input
-                  value={formData.firstName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
-                  className="bg-white/5 border-white/10"
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400">Soyad</label>
-                <Input
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
-                  className="bg-white/5 border-white/10"
-                  disabled={loading}
-                />
-              </div>
+              <p className="text-xs text-gray-500">Kullanıcı adınız tüm sistemde görünecektir</p>
             </div>
             <div className="space-y-2">
               <label className="text-sm text-gray-400">E-posta</label>

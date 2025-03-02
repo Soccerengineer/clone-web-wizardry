@@ -3,6 +3,8 @@ import { User } from "@/models/auth.model";
 import { Player } from "@/models/player.model";
 import { formatDate } from "@/utils/formatters";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserProfileProps {
   user?: User | null;
@@ -12,9 +14,60 @@ interface UserProfileProps {
 }
 
 const UserProfile = ({ user, player, rating = 3.7, isLoading = false }: UserProfileProps) => {
-  // Kullanıcı adını belirle
-  const displayName = player?.display_name || user?.user_metadata?.full_name || 'Süper Oyuncu';
-  const avatarUrl = player?.avatar_url || user?.user_metadata?.avatar_url || '/placeholder.svg';
+  const [displayName, setDisplayName] = useState<string>('Süper Oyuncu');
+  const [avatarUrl, setAvatarUrl] = useState<string>('/placeholder.svg');
+  
+  // Kullanıcı bilgilerini dinamik olarak güncelle
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      // Başlangıç değerleri - geçici olarak prop'lardan gelen verileri kullan
+      let tempName = 
+        player?.nickname || 
+        player?.display_name || 
+        user?.user_metadata?.nickname || 
+        user?.user_metadata?.full_name || 
+        'Süper Oyuncu';
+      
+      let tempAvatarUrl = player?.avatar_url || user?.user_metadata?.avatar_url || '/placeholder.svg';
+      
+      // Eğer user prop'u varsa, en güncel verileri almaya çalış
+      if (user?.id) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('nickname, avatar_url')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.nickname) {
+            tempName = profile.nickname;
+          }
+          
+          if (profile?.avatar_url) {
+            tempAvatarUrl = profile.avatar_url;
+          }
+        } catch (error) {
+          console.error("Kullanıcı profili yüklenirken hata:", error);
+        }
+      }
+      
+      setDisplayName(tempName);
+      setAvatarUrl(tempAvatarUrl);
+    };
+    
+    loadUserProfile();
+    
+    // Auth durumu değişikliklerini dinle
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'USER_UPDATED') {
+        loadUserProfile();
+      }
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [user, player]);
   
   // Hesap oluşturma tarihini formatla (varsa)
   const creationDate = user?.created_at 

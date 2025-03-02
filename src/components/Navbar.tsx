@@ -12,7 +12,7 @@ const Navbar = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState("Kullanıcı");
+  const [userName, setUserName] = useState("Süper Oyuncu");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -27,30 +27,31 @@ const Navbar = () => {
         setIsAuthenticated(true);
         
         try {
-          // Kullanıcı bilgilerini çek
+          // Kullanıcı bilgilerini çek - sadece nickname alanını sor
           const { data: profiles, error } = await supabase
             .from('profiles')
-            .select('first_name, last_name')
+            .select('nickname')
             .eq('id', session.user.id)
             .single();
             
-          if (profiles) {
-            const fullName = `${profiles.first_name || ''} ${profiles.last_name || ''}`.trim();
-            setUserName(fullName || "Kullanıcı");
+          if (profiles && profiles.nickname) {
+            // Sadece nickname kontrolü
+            setUserName(profiles.nickname);
           } else {
             // Profil tablosu erişimi yoksa ya da profil verisi yoksa metadata'dan al
             const metadata = session.user.user_metadata;
-            if (metadata) {
-              const firstName = metadata.first_name || '';
-              const lastName = metadata.last_name || '';
-              const fullName = `${firstName} ${lastName}`.trim();
-              setUserName(fullName || "Kullanıcı");
+            if (metadata && metadata.nickname) {
+              // Sadece nickname kontrolü
+              setUserName(metadata.nickname);
+            } else {
+              // Varsayılan değer "Süper Oyuncu"
+              setUserName("Süper Oyuncu");
             }
           }
         } catch (error) {
           console.error("Profil verisi çekilemedi:", error);
-          // Hata durumunda varsayılan değerleri kullan
-          setUserName("Kullanıcı");
+          // Hata durumunda varsayılan değeri kullan
+          setUserName("Süper Oyuncu");
         }
       } else {
         // Giriş yapmamış kullanıcı
@@ -61,8 +62,11 @@ const Navbar = () => {
     checkUser();
     
     // Auth durumu dinleyici
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
-      checkUser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      // USER_UPDATED eventini de özellikle dinliyoruz
+      if (event === 'USER_UPDATED' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        checkUser();
+      }
     });
     
     return () => subscription.unsubscribe();
