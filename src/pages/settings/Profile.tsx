@@ -120,7 +120,8 @@ const Profile = () => {
         data: {
           first_name: formData.firstName,
           last_name: formData.lastName,
-          nickname: formData.nickname
+          nickname: formData.nickname,
+          full_name: `${formData.firstName} ${formData.lastName}`.trim()
         }
       });
       
@@ -155,12 +156,47 @@ const Profile = () => {
           console.warn("Profil tablosu erişimi başarısız, devam ediliyor:", error);
           // Profiles tablosu yoksa veya erişilemiyorsa, sadece metadata ile devam et
         }
+      } else {
+        // Profil tablosunu güncelle
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            nickname: formData.nickname,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', session.user.id);
+        
+        if (profileUpdateError) {
+          console.warn("Profil güncellenemedi:", profileUpdateError.message);
+        }
+      }
+      
+      // Auth state değişikliğini zorlayarak UI'nin hemen güncellenmesini sağla
+      const currentSession = await supabase.auth.getSession();
+      if (currentSession.data.session) {
+        // Session refresh et
+        await supabase.auth.refreshSession();
+        
+        // Auth state değişikliği eventi tetikle
+        supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'USER_UPDATED') {
+            console.log('Kullanıcı güncellendi, UI yenileniyor');
+          }
+        });
       }
       
       toast({
         title: "Başarılı",
         description: "Profil bilgileriniz güncellendi."
       });
+      
+      // Sayfayı yenileme - UI'ın hemen güncellenmesi için
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
     } catch (error: any) {
       console.error("Profil güncellenirken hata oluştu:", error);
       toast({

@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Supabase URL ve anonKey'in doğru şekilde tanımlandığını kontrol et
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase çevre değişkenleri bulunamadı. Lütfen .env dosyanızı kontrol edin.');
   console.error('VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY tanımlanmalıdır.');
 }
@@ -14,7 +14,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
 // Bağlantı durumunu kontrol et
 supabase.auth.onAuthStateChange((event, session) => {
@@ -41,4 +41,54 @@ export const checkSupabaseConnection = async () => {
     console.error('Supabase bağlantısı sırasında beklenmeyen hata:', err);
     return { ok: false, error: err instanceof Error ? err.message : 'Bilinmeyen hata' };
   }
+};
+
+// Tablonun varlığını kontrol eden yardımcı fonksiyon
+export const checkTableExists = async (tableName: string): Promise<boolean> => {
+  try {
+    // Sistem katalog tablosundan sorgu yap
+    const { data, error } = await supabase.rpc('check_table_exists', { table_name: tableName });
+    
+    if (error || !data) {
+      // RPC çalışmadıysa alternatif yöntemi dene
+      try {
+        // Tabloya basit bir sorgu yap (limit 0)
+        const { error: queryError } = await supabase.from(tableName).select('*').limit(0);
+        return !queryError; // Hata yoksa tablo var demektir
+      } catch {
+        console.info(`Tablo kontrolü başarısız: ${tableName}`);
+        return false;
+      }
+    }
+    
+    return data;
+  } catch (err) {
+    console.error(`Tablo kontrolü sırasında hata: ${tableName}`, err);
+    return false;
+  }
+};
+
+// Tabloya güvenli şekilde erişim denemesi
+export const safeTableAccess = <T>(
+  tableName: string, 
+  operation: (table: typeof supabase.from) => Promise<{ data: T | null, error: any }>
+): Promise<{ data: T | null, error: any }> => {
+  return new Promise(async (resolve) => {
+    try {
+      // İşlem yap
+      const result = await operation(supabase.from(tableName));
+      
+      // Tablo yok hatası
+      if (result.error?.code === '42P01') {
+        console.info(`Tablo bulunamadı: ${tableName}, dummy yanıt döndürülüyor`);
+        resolve({ data: null, error: null });
+        return;
+      }
+      
+      resolve(result);
+    } catch (err) {
+      console.error(`Tablo işleminde hata: ${tableName}`, err);
+      resolve({ data: null, error: null });
+    }
+  });
 };

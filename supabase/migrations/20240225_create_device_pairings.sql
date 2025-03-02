@@ -54,4 +54,46 @@ EXECUTE FUNCTION set_expiry_for_device_pairing();
 -- Görünüm oluştur: Aktif cihaz eşleştirmeleri
 CREATE OR REPLACE VIEW active_device_pairings AS
 SELECT * FROM device_pairings
-WHERE is_active = true AND (expiry_at IS NULL OR expiry_at > now()); 
+WHERE is_active = true AND (expiry_at IS NULL OR expiry_at > now());
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  first_name TEXT,
+  last_name TEXT,
+  avatar_url TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+);
+
+-- RLS güvenlik politikaları
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Kullanıcılar kendi profillerini görebilir
+CREATE POLICY "Kullanıcılar kendi profillerini görebilir" 
+ON profiles FOR SELECT 
+USING (auth.uid() = id);
+
+-- Kullanıcılar kendi profillerini düzenleyebilir
+CREATE POLICY "Kullanıcılar kendi profillerini düzenleyebilir" 
+ON profiles FOR UPDATE
+USING (auth.uid() = id);
+
+-- Kullanıcı oluşturulduğunda otomatik profil ekleme
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, first_name, last_name, avatar_url)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data->>'first_name',
+    new.raw_user_meta_data->>'last_name',
+    new.raw_user_meta_data->>'avatar_url'
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Yeni kullanıcı kaydı olduğunda tetikleyici
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user(); 

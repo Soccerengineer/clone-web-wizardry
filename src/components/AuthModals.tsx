@@ -6,23 +6,28 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Phone, Lock, ArrowLeft } from "lucide-react";
+import { Mail, Phone, Lock, ArrowLeft, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Telefon numarasını Supabase'in beklediği formata çevir
 const formatPhoneNumber = (phoneNumber: string): string => {
-  // Önce tüm boşlukları ve gereksiz karakterleri temizle
-  let cleanPhone = phoneNumber.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+  if (!phoneNumber) return '';
   
-  // Türkiye için +90 formatını zorla
-  if (cleanPhone.startsWith('+90')) {
-    return cleanPhone;  // Zaten doğru formatta
-  } else if (cleanPhone.startsWith('90') && !cleanPhone.startsWith('+')) {
-    return `+${cleanPhone}`;  // + ekle
-  } else if (cleanPhone.startsWith('0')) {
-    return `+90${cleanPhone.substring(1)}`;  // 0'ı kaldır, +90 ekle
-  } else {
-    return `+90${cleanPhone}`;  // +90 ekle
+  // Başındaki 0'ı kaldır ve +90 ekle
+  if (phoneNumber.startsWith('0')) {
+    phoneNumber = phoneNumber.substring(1);
   }
+  
+  // Boşluk, parantez ve tire gibi karakterleri kaldır
+  phoneNumber = phoneNumber.replace(/[\s\(\)\-]/g, '');
+  
+  // Başında + yoksa ekle
+  if (!phoneNumber.startsWith('+')) {
+    // Türkiye ülke kodu
+    phoneNumber = `+90${phoneNumber}`;
+  }
+  
+  return phoneNumber;
 };
 
 interface AuthModalsProps {
@@ -34,6 +39,7 @@ interface AuthModalsProps {
 
 const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginOpenChange, onRegisterOpenChange }: AuthModalsProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Login states
   const [loginEmail, setLoginEmail] = useState("");
@@ -118,6 +124,13 @@ const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginOpenChange, onRegister
             phone: formattedPhone,
             token: loginVerificationCode,
             type: "sms",
+            options: {
+              data: {
+                // Telefon ile giriş yapanların adı "Misafir Oyuncu" olsun
+                first_name: "Misafir",
+                last_name: "Oyuncu"
+              }
+            }
           });
           
           if (error) throw error;
@@ -202,8 +215,8 @@ const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginOpenChange, onRegister
             type: "sms",
             options: {
               data: {
-                // Varsayılan kullanıcı adı: "Süper Oyuncu"
-                first_name: "Süper",
+                // Varsayılan kullanıcı adı: "Misafir Oyuncu"
+                first_name: "Misafir",
                 last_name: "Oyuncu"
               }
             }

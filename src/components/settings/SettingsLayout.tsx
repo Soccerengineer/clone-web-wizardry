@@ -8,6 +8,7 @@ import {
   Eye,
   Settings,
   LogOut,
+  Home,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -98,6 +99,16 @@ const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
               </Button>
             </Link>
           ))}
+          
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            onClick={() => navigate('/')}
+          >
+            <Home className="h-4 w-4" />
+            Ana Sayfaya Dön
+          </Button>
+          
           <Button
             variant="ghost"
             className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"

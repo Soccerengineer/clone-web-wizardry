@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { LayoutDashboard, LineChart, Users, Trophy, Award, CalendarDays, Settings, LogOut, User, Brain, Target, Home } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarSeparator } from "@/components/ui/sidebar";
@@ -7,50 +7,72 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+
 interface UserLayoutProps {
   children: ReactNode;
 }
-const UserLayout = ({
-  children
-}: UserLayoutProps) => {
+
+const UserLayout = ({ children }: UserLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    toast
-  } = useToast();
-  const menuItems = [{
-    icon: LayoutDashboard,
-    label: "Genel Bakış",
-    href: "/overview"
-  }, {
-    icon: LineChart,
-    label: "İstatistikler",
-    href: "/statistics"
-  }, {
-    icon: Users,
-    label: "Karşılaşmalar",
-    href: "/matches"
-  }, {
-    icon: Trophy,
-    label: "Sıralamalar",
-    href: "/rankings"
-  }, {
-    icon: Award,
-    label: "Promosyonlar ve Ödüller",
-    href: "/promotions"
-  }, {
-    icon: CalendarDays,
-    label: "Turnuva ve Etkinlikler",
-    href: "/tournaments"
-  }, {
-    icon: Brain,
-    label: "Kadro KUR AI (Beta)",
-    href: "/squad-builder"
-  }, {
-    icon: Target,
-    label: "İddialar",
-    href: "/challenges"
-  }];
+  const { toast } = useToast();
+  const [userName, setUserName] = useState("Kullanıcı");
+  const [avatarUrl, setAvatarUrl] = useState("/placeholder.svg");
+
+  useEffect(() => {
+    // Kullanıcı bilgilerini yükle
+    const loadUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        try {
+          // Profil tablosundan kullanıcı bilgilerini al
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, avatar_url')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+            setUserName(fullName || "Kullanıcı");
+            if (profile.avatar_url) {
+              setAvatarUrl(profile.avatar_url);
+            }
+          } else {
+            // Metadata'dan bilgileri al
+            const metadata = session.user.user_metadata;
+            if (metadata) {
+              const firstName = metadata.first_name || '';
+              const lastName = metadata.last_name || '';
+              const fullName = `${firstName} ${lastName}`.trim();
+              setUserName(fullName || "Kullanıcı");
+              
+              if (metadata.avatar_url) {
+                setAvatarUrl(metadata.avatar_url);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Kullanıcı bilgileri yüklenirken hata:", error);
+        }
+      }
+    };
+    
+    loadUserData();
+  }, []);
+
+  const menuItems = [
+    { icon: LayoutDashboard, label: "Genel Bakış", href: "/overview" },
+    { icon: LineChart, label: "İstatistikler", href: "/statistics" },
+    { icon: Users, label: "Karşılaşmalar", href: "/matches" },
+    { icon: Trophy, label: "Sıralamalar", href: "/rankings" },
+    { icon: Award, label: "Promosyonlar ve Ödüller", href: "/promotions" },
+    { icon: CalendarDays, label: "Turnuva ve Etkinlikler", href: "/tournaments" },
+    { icon: Brain, label: "Kadro KUR AI (Beta)", href: "/squad-builder" },
+    { icon: Target, label: "İddialar", href: "/challenges" }
+  ];
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -67,7 +89,9 @@ const UserLayout = ({
       });
     }
   };
-  return <SidebarProvider defaultOpen>
+
+  return (
+    <SidebarProvider defaultOpen>
       <div className="flex min-h-screen w-full bg-[#0A1120]">
         <Sidebar className="border-r border-white/10">
           <div className="flex flex-col h-full">
@@ -86,12 +110,19 @@ const UserLayout = ({
             <SidebarContent>
               <SidebarGroup className="px-0 py-[85px]">
                 <SidebarGroupContent className="flex flex-col items-stretch [&>*]:list-none">
-                  {menuItems.map((item, index) => <SidebarMenuItem key={index} className="list-none">
-                      <SidebarMenuButton className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${location.pathname === item.href ? 'bg-white/5 text-white' : ''}`} onClick={() => navigate(item.href)}>
+                  {menuItems.map((item, index) => (
+                    <SidebarMenuItem key={index} className="list-none">
+                      <SidebarMenuButton 
+                        className={`flex items-center gap-3 px-4 py-4 hover:bg-white/5 text-gray-300 hover:text-white transition-colors w-full ${
+                          location.pathname === item.href ? 'bg-white/5 text-white' : ''
+                        }`} 
+                        onClick={() => navigate(item.href)}
+                      >
                         <item.icon className="h-5 w-5 shrink-0" />
                         <span className="flex-1 font-normal mx-0 my-0 py-0 px-0">{item.label}</span>
                       </SidebarMenuButton>
-                    </SidebarMenuItem>)}
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
@@ -104,14 +135,13 @@ const UserLayout = ({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full flex items-center gap-2 px-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarImage src={avatarUrl} />
                         <AvatarFallback>
                           <User className="h-4 w-4" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col items-start flex-1">
-                        <span className="text-sm font-medium text-white">Kullanıcı Adı</span>
-                        <span className="text-xs text-gray-400">@nickname</span>
+                        <span className="text-sm font-medium text-white">{userName}</span>
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
@@ -148,6 +178,8 @@ const UserLayout = ({
           </div>
         </main>
       </div>
-    </SidebarProvider>;
+    </SidebarProvider>
+  );
 };
+
 export default UserLayout;

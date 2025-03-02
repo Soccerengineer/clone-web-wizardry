@@ -14,7 +14,6 @@ interface UserProfileProps {
 const UserProfile = ({ user, player, rating = 3.7, isLoading = false }: UserProfileProps) => {
   // Kullanıcı adını belirle
   const displayName = player?.display_name || user?.user_metadata?.full_name || 'Süper Oyuncu';
-  const username = player?.username || 'Kullanıcı';
   const avatarUrl = player?.avatar_url || user?.user_metadata?.avatar_url || '/placeholder.svg';
   
   // Hesap oluşturma tarihini formatla (varsa)
@@ -36,7 +35,6 @@ const UserProfile = ({ user, player, rating = 3.7, isLoading = false }: UserProf
       
       <div>
         <h1 className="text-2xl font-bold text-white">{displayName}</h1>
-        <div className="text-lg text-gray-300">@{username}</div>
         
         <div className="flex items-center gap-1 text-primary mt-1">
           <span>{rating.toFixed(1)}</span>
