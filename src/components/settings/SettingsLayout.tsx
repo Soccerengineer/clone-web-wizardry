@@ -1,7 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   User,
   Shield,
@@ -10,9 +9,13 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const pathname = location.pathname;
 
   const navigation = [
@@ -43,6 +46,40 @@ const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
     },
   ];
 
+  const handleLogout = async () => {
+    try {
+      // Önce localStorage'daki misafir kullanıcı durumunu kontrol et
+      const userType = localStorage.getItem('userType');
+      const isGuestUser = userType === 'guest';
+      
+      if (isGuestUser) {
+        // Misafir kullanıcı için sadece localStorage temizle
+        localStorage.removeItem('userType');
+        toast({
+          title: "Çıkış yapıldı",
+          description: "Misafir oturumu sonlandırıldı."
+        });
+      } else {
+        // Normal kullanıcı için Supabase oturumunu sonlandır
+        await supabase.auth.signOut();
+        toast({
+          title: "Çıkış yapıldı",
+          description: "Başarıyla çıkış yaptınız."
+        });
+      }
+      
+      // Çıkış sonrası ana sayfaya yönlendir
+      navigate('/');
+    } catch (error) {
+      console.error("Çıkış yapılırken hata oluştu:", error);
+      toast({
+        title: "Hata",
+        description: "Çıkış yapılırken bir sorun oluştu.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row gap-8 p-8">
       <aside className="md:w-64 flex-shrink-0">
@@ -64,6 +101,7 @@ const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
           <Button
             variant="ghost"
             className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />
             Çıkış Yap

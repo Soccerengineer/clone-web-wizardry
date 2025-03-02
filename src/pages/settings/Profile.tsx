@@ -1,22 +1,176 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SettingsLayout from "@/components/settings/SettingsLayout";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    nickname: "SuperPlayer",
-    firstName: "Ali",
-    lastName: "Nazik",
-    email: "ali@example.com",
-    phone: "+90 555 123 4567",
+    nickname: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        setLoading(true);
+        
+        // Kullanıcı oturumunu kontrol et
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast({
+            title: "Oturum bulunamadı",
+            description: "Lütfen giriş yapın.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Kullanıcı e-posta adresini ve telefonunu alın
+        const email = session.user.email || "";
+        const phone = session.user.phone || "";
+        
+        // Metadata veya profil veritabanından isim bilgilerini alın
+        let firstName = "";
+        let lastName = "";
+        let nickname = "";
+        
+        try {
+          // Önce profil tablosundan deneyin
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileData) {
+            firstName = profileData.first_name || "";
+            lastName = profileData.last_name || "";
+            nickname = profileData.nickname || "";
+          } else {
+            // Metadata'dan alın
+            const metadata = session.user.user_metadata;
+            if (metadata) {
+              firstName = metadata.first_name || "";
+              lastName = metadata.last_name || "";
+              nickname = metadata.nickname || "";
+            }
+          }
+        } catch (error) {
+          console.error("Profil verileri yüklenirken hata oluştu:", error);
+          // Hata durumunda metadata'dan almayı deneyin
+          const metadata = session.user.user_metadata;
+          if (metadata) {
+            firstName = metadata.first_name || "";
+            lastName = metadata.last_name || "";
+            nickname = metadata.nickname || "";
+          }
+        }
+        
+        // Form verilerini ayarla
+        setFormData({
+          nickname: nickname || firstName.toLowerCase() || "superoyuncu",
+          firstName,
+          lastName,
+          email,
+          phone,
+        });
+      } catch (error) {
+        console.error("Kullanıcı verileri yüklenirken hata oluştu:", error);
+        toast({
+          title: "Hata",
+          description: "Profil bilgileri yüklenirken bir sorun oluştu.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUserData();
+  }, [toast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
+    setLoading(true);
+    
+    try {
+      // Oturum kontrolü
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Oturum bulunamadı",
+          description: "Lütfen giriş yapın.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // User metadata'yı güncelle
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          nickname: formData.nickname
+        }
+      });
+      
+      if (metadataError) throw metadataError;
+      
+      // Profil tablosunda kayıt var mı kontrol et
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+      
+      // Eğer profiles tablosu varsa ve kullanıcı kaydı yoksa, yeni kayıt oluştur
+      if (!existingProfile) {
+        try {
+          // Profil tablosu varsa upsert yap (insert veya update)
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: session.user.id,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              nickname: formData.nickname,
+              updated_at: new Date().toISOString()
+            });
+          
+          if (profileError) {
+            console.warn("Profil güncellenemedi, muhtemelen tablo yok:", profileError.message);
+            // Profil güncellenemedi ama metadata güncellendi, o yüzden başarılı sayalım
+          }
+        } catch (error) {
+          console.warn("Profil tablosu erişimi başarısız, devam ediliyor:", error);
+          // Profiles tablosu yoksa veya erişilemiyorsa, sadece metadata ile devam et
+        }
+      }
+      
+      toast({
+        title: "Başarılı",
+        description: "Profil bilgileriniz güncellendi."
+      });
+    } catch (error: any) {
+      console.error("Profil güncellenirken hata oluştu:", error);
+      toast({
+        title: "Hata",
+        description: error.message || "Profil bilgileri güncellenirken bir sorun oluştu.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,6 +189,7 @@ const Profile = () => {
                   setFormData({ ...formData, nickname: e.target.value })
                 }
                 className="bg-white/5 border-white/10"
+                disabled={loading}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -46,6 +201,7 @@ const Profile = () => {
                     setFormData({ ...formData, firstName: e.target.value })
                   }
                   className="bg-white/5 border-white/10"
+                  disabled={loading}
                 />
               </div>
               <div className="space-y-2">
@@ -56,6 +212,7 @@ const Profile = () => {
                     setFormData({ ...formData, lastName: e.target.value })
                   }
                   className="bg-white/5 border-white/10"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -64,24 +221,24 @@ const Profile = () => {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="bg-white/5 border-white/10"
+                disabled={true}
+                className="bg-white/5 border-white/10 opacity-70"
               />
+              <p className="text-xs text-gray-500">E-posta adresi değiştirilemez</p>
             </div>
             <div className="space-y-2">
               <label className="text-sm text-gray-400">Telefon</label>
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                className="bg-white/5 border-white/10"
+                disabled={true}
+                className="bg-white/5 border-white/10 opacity-70"
               />
+              <p className="text-xs text-gray-500">Telefon numarası değiştirilemez</p>
             </div>
-            <Button type="submit">Değişiklikleri Kaydet</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
+            </Button>
           </form>
         </CardContent>
       </Card>

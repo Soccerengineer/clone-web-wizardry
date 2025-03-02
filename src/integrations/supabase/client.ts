@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const supabaseUrl = "https://kolqnwtkwxjgfkcnzzis.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvbHFud3Rrd3hqZ2ZrY256emlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MzcyNjUsImV4cCI6MjA1NTQxMzI2NX0.ekJ0gJym21sCd-59e33Y46UXoXiOqwExdh9E6_Naw3I";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Supabase URL ve anonKey'in doğru şekilde tanımlandığını kontrol et
 if (!supabaseUrl || !supabaseAnonKey) {

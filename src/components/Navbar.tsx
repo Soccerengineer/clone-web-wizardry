@@ -25,28 +25,45 @@ const Navbar = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       // localStorage'da misafir durumunu kontrol et
-      const guestUserJSON = localStorage.getItem('guestUser');
-      const guestUser = guestUserJSON ? JSON.parse(guestUserJSON) : null;
+      const userType = localStorage.getItem('userType');
+      const isGuestUser = userType === 'guest';
       
       if (session) {
         // Oturum açılmış kullanıcı
         setIsAuthenticated(true);
         setIsGuest(false);
         
-        // Kullanıcı bilgilerini çek
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profiles) {
-          const fullName = `${profiles.first_name || ''} ${profiles.last_name || ''}`.trim();
-          setUserName(fullName || "Kullanıcı");
-          setUserNickname(profiles.first_name?.toLowerCase() || "kullanici");
+        try {
+          // Kullanıcı bilgilerini çek
+          const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profiles) {
+            const fullName = `${profiles.first_name || ''} ${profiles.last_name || ''}`.trim();
+            setUserName(fullName || "Kullanıcı");
+            setUserNickname(profiles.first_name?.toLowerCase() || "kullanici");
+          } else {
+            // Profil tablosu erişimi yoksa ya da profil verisi yoksa metadata'dan al
+            const metadata = session.user.user_metadata;
+            if (metadata) {
+              const firstName = metadata.first_name || '';
+              const lastName = metadata.last_name || '';
+              const fullName = `${firstName} ${lastName}`.trim();
+              setUserName(fullName || "Kullanıcı");
+              setUserNickname(firstName?.toLowerCase() || "kullanici");
+            }
+          }
+        } catch (error) {
+          console.error("Profil verisi çekilemedi:", error);
+          // Hata durumunda varsayılan değerleri kullan
+          setUserName("Kullanıcı");
+          setUserNickname("kullanici");
         }
-      } else if (guestUser && guestUser.isGuest) {
-        // Misafir kullanıcı - Yeni localStorage anahtarını kontrol ediyoruz
+      } else if (isGuestUser) {
+        // Misafir kullanıcı - localStorage kontrolü
         setIsAuthenticated(true);
         setIsGuest(true);
         setUserName("Misafir");
@@ -71,7 +88,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     if (isGuest) {
       // Misafir için sadece localStorage temizle
-      localStorage.removeItem('guestUser');
+      localStorage.removeItem('userType');
       setIsAuthenticated(false);
       setIsGuest(false);
       toast({
@@ -215,8 +232,8 @@ const Navbar = () => {
       <AuthModals 
         isLoginOpen={isLoginOpen}
         isRegisterOpen={isRegisterOpen}
-        onLoginClose={() => setIsLoginOpen(false)}
-        onRegisterClose={() => setIsRegisterOpen(false)}
+        onLoginOpenChange={setIsLoginOpen}
+        onRegisterOpenChange={setIsRegisterOpen}
       />
     </>
   );

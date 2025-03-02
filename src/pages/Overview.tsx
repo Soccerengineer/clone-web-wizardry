@@ -3,61 +3,126 @@ import UserProfile from "@/components/overview/UserProfile";
 import StatisticCards from "@/components/overview/StatisticCards";
 import PerformanceCharts from "@/components/overview/PerformanceCharts";
 import ExperienceLevel from "@/components/overview/ExperienceLevel";
-import { usePlayerStats } from "@/controllers/usePlayerStats";
-import { useAuth } from "@/controllers/useAuth";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { getUserOverview, getUserMatchHistory, UserOverview, UserMatch } from "@/services/statistics.service";
+import { supabase } from "@/integrations/supabase/client";
 
 const Overview = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [userOverview, setUserOverview] = useState<UserOverview | null>(null);
+  const [matchHistory, setMatchHistory] = useState<UserMatch[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
   
   // Auth controller'dan kullanıcı bilgisini al
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   
-  // Controller'dan veri ve durum bilgilerini al
-  const { 
-    playerStats, 
-    playerAchievements,
-    playerProfile,
-    isLoading: isStatsLoading, 
-    error 
-  } = usePlayerStats();
-
-  // Kullanıcı bilgilerinin yüklenmesi için 3 saniyelik bir zaman aşımı ekleyin
+  // Kullanıcı oturumunu kontrol et
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsPageLoading(false);
-    }, 3000);
-    
-    return () => clearTimeout(timer);
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUser(session.user);
+        }
+      } catch (err) {
+        console.error("Oturum kontrolü hatası:", err);
+        setError("Kullanıcı bilgileri alınamadı");
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    checkSession();
   }, []);
 
+  // Kullanıcı verilerini yükle
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user) return;
+      
+      try {
+        // Genel bakış verilerini al
+        const { data: overviewData, error: overviewError } = await getUserOverview();
+        
+        if (overviewError) {
+          console.error("Genel bakış verisi hatası:", overviewError);
+          toast({
+            variant: "destructive",
+            title: "Hata",
+            description: "Genel bakış verileri yüklenirken bir hata oluştu."
+          });
+          setError(overviewError.message);
+        } else if (overviewData) {
+          setUserOverview(overviewData);
+        }
+        
+        // Maç geçmişini al
+        const { data: matchData, error: matchError } = await getUserMatchHistory();
+        
+        if (matchError) {
+          console.error("Maç geçmişi hatası:", matchError);
+        } else if (matchData) {
+          setMatchHistory(matchData);
+        }
+      } catch (err) {
+        console.error("Veri yükleme hatası:", err);
+        setError("Veriler yüklenirken bir hata oluştu");
+      } finally {
+        setIsPageLoading(false);
+      }
+    };
+
+    if (user && !isAuthLoading) {
+      loadUserData();
+    } else if (!isAuthLoading) {
+      setIsPageLoading(false);
+    }
+  }, [user, isAuthLoading, toast]);
+
   // Genel yükleme durumu
-  const isLoading = isAuthLoading || isStatsLoading || isPageLoading;
+  const isLoading = isAuthLoading || isPageLoading;
 
   // Veri durumunu kontrol et
-  const hasRealData = !!(playerStats && playerStats.length > 0);
+  const hasRealData = !!userOverview;
 
   // Mock veri oluştur - gerçek veriler yoksa bunları kullan
-  const mockPlayerStats = playerStats || [
-    {
-      id: "1",
-      player_id: user?.id || "guest",
-      matches_played: 12,
-      goals: 5,
-      assists: 3,
-      xg: 4.2,
-      created_at: new Date().toISOString(),
-      technical_rating: 3.8,
-      position_rating: 3.5,
-      condition_rating: 4.0,
-      venue: "Fenerbahçe Spor Kulübü"
-    }
-  ];
+  const mockPlayerStats = matchHistory.length > 0 
+    ? matchHistory.map(match => ({
+        id: match.id,
+        player_id: user?.id || "guest",
+        matches_played: 1,
+        goals: match.goals_scored || 0,
+        assists: match.assists || 0,
+        xg: 1.2,
+        created_at: match.match_date,
+        technical_rating: match.technical_rating || 3.5,
+        position_rating: match.position_rating || 3.5,
+        condition_rating: match.physical_rating || 3.5,
+        venue: match.venue || "Fenerbahçe Spor Kulübü"
+      }))
+    : [
+      {
+        id: "1",
+        player_id: user?.id || "guest",
+        matches_played: 12,
+        goals: 5,
+        assists: 3,
+        xg: 4.2,
+        created_at: new Date().toISOString(),
+        technical_rating: 3.8,
+        position_rating: 3.5,
+        condition_rating: 4.0,
+        venue: "Fenerbahçe Spor Kulübü"
+      }
+    ];
   
-  const mockAchievements = playerAchievements || [
+  const mockAchievements = userOverview?.achievements || [
     {
       id: "1",
       player_id: user?.id || "guest",
@@ -74,34 +139,24 @@ const Overview = () => {
     }
   ];
   
-  const mockProfile = playerProfile || {
+  const mockProfile = {
     player: {
       id: user?.id || "guest",
       name: user?.email?.split('@')[0] || "Misafir Oyuncu",
       avatar_url: null,
-      position: "Forvet",
-      xp_level: 2
+      position: userOverview?.favorite_position || "Forvet",
+      xp_level: userOverview?.level || 1
     }
   };
 
   // İstatistik hesaplamaları
-  const totalMatches = mockPlayerStats?.length || 0;
-  const mvpCount = mockAchievements?.filter(a => a.type === 'mvp').length || 0;
-  const medals = mockAchievements?.length || 0;
-  const favoriteVenue = mockPlayerStats?.[0]?.venue || "Fenerbahçe Spor Kulübü";
+  const totalMatches = userOverview?.matches_played || 0;
+  const mvpCount = userOverview?.mvp_count || 0;
+  const medals = userOverview?.achievements?.length || 0;
+  const favoriteVenue = userOverview?.favorite_venue || "Fenerbahçe Spor Kulübü";
   
   // Oyuncu derecelendirmesini hesapla
-  const calculateRating = () => {
-    if (!mockPlayerStats || mockPlayerStats.length === 0) return 3.7;
-    
-    const sum = mockPlayerStats.reduce((total, stat) => {
-      return total + ((stat.technical_rating || 3.5) + (stat.position_rating || 3.5) + (stat.condition_rating || 3.5)) / 3;
-    }, 0);
-    
-    return sum / mockPlayerStats.length;
-  };
-  
-  const playerRating = calculateRating();
+  const playerRating = userOverview?.overall_rating || 3.7;
 
   // Hata durumunda
   if (error && !isLoading) {
@@ -109,7 +164,7 @@ const Overview = () => {
       <UserLayout>
         <div className="text-center py-8">
           <div className="text-red-500 text-lg">
-            {error instanceof Error ? error.message : "Veriler yüklenirken bir hata oluştu"}
+            {error}
           </div>
           <Button 
             onClick={() => window.location.reload()} 
@@ -142,7 +197,7 @@ const Overview = () => {
             <AlertCircle className="h-4 w-4 text-amber-400" />
             <AlertTitle className="text-amber-400">Bilgilendirme</AlertTitle>
             <AlertDescription className="text-amber-300">
-              Şu anda demo verileri görüntülüyorsunuz. Gerçek verileriniz Supabase veritabanı bağlantısı kurulduktan sonra görüntülenecektir.
+              Şu anda demo verileri görüntülüyorsunuz. Maç kayıtları oluşturuldukça gerçek verileriniz burada görüntülenecektir.
             </AlertDescription>
           </Alert>
         )}

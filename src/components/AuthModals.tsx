@@ -1,364 +1,500 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, Lock, User, AlertCircle, Phone, ArrowLeft, KeyRound } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Mail, Phone, Lock, ArrowLeft } from "lucide-react";
+
+// Telefon numarasını Supabase'in beklediği formata çevir
+const formatPhoneNumber = (phoneNumber: string): string => {
+  // Önce tüm boşlukları ve gereksiz karakterleri temizle
+  let cleanPhone = phoneNumber.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+  
+  // Türkiye için +90 formatını zorla
+  if (cleanPhone.startsWith('+90')) {
+    return cleanPhone;  // Zaten doğru formatta
+  } else if (cleanPhone.startsWith('90') && !cleanPhone.startsWith('+')) {
+    return `+${cleanPhone}`;  // + ekle
+  } else if (cleanPhone.startsWith('0')) {
+    return `+90${cleanPhone.substring(1)}`;  // 0'ı kaldır, +90 ekle
+  } else {
+    return `+90${cleanPhone}`;  // +90 ekle
+  }
+};
 
 interface AuthModalsProps {
   isLoginOpen: boolean;
   isRegisterOpen: boolean;
-  onLoginClose: () => void;
-  onRegisterClose: () => void;
+  onLoginOpenChange: (open: boolean) => void;
+  onRegisterOpenChange: (open: boolean) => void;
 }
 
-const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginClose, onRegisterClose }: AuthModalsProps) => {
-  const [isLoading, setIsLoading] = useState(false);
+const AuthModals = ({ isLoginOpen, isRegisterOpen, onLoginOpenChange, onRegisterOpenChange }: AuthModalsProps) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
-
-  // Login form state
+  
+  // Login states
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginPhone, setLoginPhone] = useState("");
-  const [usePhoneLogin, setUsePhoneLogin] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [showVerificationInput, setShowVerificationInput] = useState(false);
-
-  // Register form state
-  const [registerName, setRegisterName] = useState("");
+  const [loginVerificationCode, setLoginVerificationCode] = useState("");
+  const [isLoginCodeSent, setIsLoginCodeSent] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
+  
+  // Register states
   const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
-  const [usePhone, setUsePhone] = useState(false);
-
-  // Telefon güvenlik bilgisi için tooltip içeriği
-  const phoneSecurityInfo = "Telefon numaranız 3. kişilerle paylaşılmayacaktır ve SSL güvenlik sertifikası ile korunmaktadır.";
-
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [registerVerificationCode, setRegisterVerificationCode] = useState("");
+  const [isRegCodeSent, setIsRegCodeSent] = useState(false);
+  const [registerMethod, setRegisterMethod] = useState<"email" | "phone">("email");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Reset all form fields when modals open/close
+  useEffect(() => {
+    if (!isLoginOpen) {
+      setLoginEmail("");
+      setLoginPassword("");
+      setLoginPhone("");
+      setLoginVerificationCode("");
+      setIsLoginCodeSent(false);
+      setLoginMethod("email");
+    }
+    
+    if (!isRegisterOpen) {
+      setRegisterEmail("");
+      setRegisterPhone("");
+      setRegisterPassword("");
+      setRegisterConfirmPassword("");
+      setRegisterVerificationCode("");
+      setIsRegCodeSent(false);
+      setRegisterMethod("email");
+    }
+  }, [isLoginOpen, isRegisterOpen]);
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
+    setIsSubmitting(true);
+    
     try {
-      if (!usePhoneLogin) {
-        // E-posta ile giriş
-        const { error } = await supabase.auth.signInWithPassword({
+      if (loginMethod === "email") {
+        // Email login
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: loginEmail,
           password: loginPassword,
         });
-
+        
         if (error) throw error;
-
+        
         toast({
-          title: "Giriş başarılı!",
-          description: "Süper Saha'ya hoş geldiniz.",
+          title: "Başarılı!",
+          description: "Giriş yapıldı.",
         });
-        onLoginClose();
-      } else if (!showVerificationInput) {
-        // Telefon doğrulama kodu gönder
-        const { error } = await supabase.auth.signInWithOtp({
-          phone: loginPhone,
-        });
-
-        if (error) throw error;
-
-        setShowVerificationInput(true);
-        toast({
-          title: "Doğrulama kodu gönderildi",
-          description: "Telefonunuza gelen doğrulama kodunu giriniz.",
-        });
+        
+        onLoginOpenChange(false);
       } else {
-        // Gelen kodu doğrula
-        const { error } = await supabase.auth.verifyOtp({
-          phone: loginPhone,
-          token: verificationCode,
-          type: 'sms',
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: "Giriş başarılı!",
-          description: "Süper Saha'ya hoş geldiniz.",
-        });
-        onLoginClose();
+        // Phone login
+        if (!isLoginCodeSent) {
+          // Send verification code
+          const formattedPhone = formatPhoneNumber(loginPhone);
+          const { error } = await supabase.auth.signInWithOtp({
+            phone: formattedPhone,
+          });
+          
+          if (error) throw error;
+          
+          setIsLoginCodeSent(true);
+          toast({
+            title: "Doğrulama kodu gönderildi",
+            description: "Telefonunuza gönderilen kodu girin.",
+          });
+        } else {
+          // Verify code
+          const formattedPhone = formatPhoneNumber(loginPhone);
+          const { error } = await supabase.auth.verifyOtp({
+            phone: formattedPhone,
+            token: loginVerificationCode,
+            type: "sms",
+          });
+          
+          if (error) throw error;
+          
+          toast({
+            title: "Başarılı!",
+            description: "Giriş yapıldı.",
+          });
+          
+          onLoginOpenChange(false);
+        }
       }
     } catch (error: any) {
       toast({
-        title: "Giriş başarısız",
-        description: error.message,
+        title: "Giriş hatası",
+        description: error.message || "Giriş yapılırken bir hata oluştu.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-
+  
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Şifre doğrulama kontrolü
-    if (registerPassword !== registerPasswordConfirm) {
-      toast({
-        title: "Kayıt başarısız",
-        description: "Şifreler eşleşmiyor. Lütfen kontrol ediniz.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    const [firstName, ...lastNameParts] = registerName.split(" ");
-    const lastName = lastNameParts.join(" ");
-
+    setIsSubmitting(true);
+    
     try {
-      const { error } = await supabase.auth.signUp({
-        email: registerEmail,
-        password: registerPassword,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName || "",
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Kayıt başarılı!",
-        description: "Lütfen e-posta adresinizi doğrulayın.",
-      });
-      onRegisterClose();
+      if (registerMethod === "email") {
+        // Email registration
+        if (registerPassword !== registerConfirmPassword) {
+          toast({
+            title: "Şifre hatası",
+            description: "Şifreler eşleşmiyor.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const { data, error } = await supabase.auth.signUp({
+          email: registerEmail,
+          password: registerPassword,
+          options: {
+            data: {
+              // Varsayılan kullanıcı adı: "Süper Oyuncu"
+              first_name: "Süper",
+              last_name: "Oyuncu"
+            }
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Kayıt başarılı!",
+          description: "E-posta adresinize gönderilen bağlantıyı takip ederek kaydınızı tamamlayabilirsiniz.",
+        });
+        
+        onRegisterOpenChange(false);
+      } else {
+        // Phone registration
+        if (!isRegCodeSent) {
+          // Send verification code for phone registration
+          const formattedPhone = formatPhoneNumber(registerPhone);
+          const { error } = await supabase.auth.signInWithOtp({
+            phone: formattedPhone,
+          });
+          
+          if (error) throw error;
+          
+          setIsRegCodeSent(true);
+          toast({
+            title: "Doğrulama kodu gönderildi",
+            description: "Telefonunuza gönderilen kodu girin.",
+          });
+        } else {
+          // Verify code and create account
+          const formattedPhone = formatPhoneNumber(registerPhone);
+          const { data, error } = await supabase.auth.verifyOtp({
+            phone: formattedPhone,
+            token: registerVerificationCode,
+            type: "sms",
+            options: {
+              data: {
+                // Varsayılan kullanıcı adı: "Süper Oyuncu"
+                first_name: "Süper",
+                last_name: "Oyuncu"
+              }
+            }
+          });
+          
+          if (error) throw error;
+          
+          toast({
+            title: "Kayıt başarılı!",
+            description: "Süper Saha'ya hoş geldiniz.",
+          });
+          
+          onRegisterOpenChange(false);
+        }
+      }
     } catch (error: any) {
       toast({
-        title: "Kayıt başarısız",
-        description: error.message,
+        title: "Kayıt hatası",
+        description: error.message || "Kayıt olurken bir hata oluştu.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-
-  const resetPhoneLogin = () => {
-    setShowVerificationInput(false);
-    setVerificationCode("");
+  
+  const resetLoginPhoneVerification = () => {
+    setIsLoginCodeSent(false);
+    setLoginVerificationCode("");
   };
-
-  const renderLoginForm = () => {
-    if (usePhoneLogin && showVerificationInput) {
-      // Doğrulama kodu girişi
-      return (
-        <>
-          <div className="flex items-center mb-4">
-            <Button 
-              type="button" 
-              variant="ghost" 
-              className="p-0 mr-2 text-white hover:text-primary" 
-              onClick={resetPhoneLogin}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <p className="text-white text-sm">
-              <span className="font-medium">{loginPhone}</span> numaralı telefona doğrulama kodu gönderildi
-            </p>
-          </div>
-          <div className="relative">
-            <Input
-              placeholder="Doğrulama Kodu"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10 text-white"
-              required
-            />
-            <KeyRound className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-          </div>
-          <Button disabled={isLoading} type="submit" className="w-full bg-primary hover:bg-primary/90">
-            {isLoading ? "Doğrulanıyor..." : "Doğrula ve Giriş Yap"}
-          </Button>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <div className="flex flex-wrap sm:flex-nowrap mb-4">
-          <select 
-            className="bg-white/90 border-r-0 border-white/20 text-black font-medium rounded-l-md px-3 py-2 w-full sm:w-auto"
-            value={usePhoneLogin ? "phone" : "email"}
-            onChange={(e) => setUsePhoneLogin(e.target.value === "phone")}
-          >
-            <option value="email" className="text-black font-medium">E-posta</option>
-            <option value="phone" className="text-black font-medium">Telefon</option>
-          </select>
-          
-          {!usePhoneLogin ? (
-            <div className="relative flex-1 w-full sm:w-auto mt-2 sm:mt-0">
-              <Input
-                placeholder="E-posta"
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white sm:rounded-l-none w-full"
-                required={!usePhoneLogin}
-              />
-              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            </div>
-          ) : (
-            <div className="relative flex-1 w-full sm:w-auto mt-2 sm:mt-0">
-              <Input
-                placeholder="Telefon Numarası"
-                type="tel"
-                value={loginPhone}
-                onChange={(e) => setLoginPhone(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white sm:rounded-l-none w-full"
-                required={usePhoneLogin}
-              />
-              <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            </div>
-          )}
-        </div>
-        
-        {!usePhoneLogin && (
-          <div className="relative mb-4">
-            <Input
-              type="password"
-              placeholder="Şifre"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10 text-white"
-              required={!usePhoneLogin}
-            />
-            <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-          </div>
-        )}
-        
-        <Button disabled={isLoading} type="submit" className="w-full bg-primary hover:bg-primary/90">
-          {isLoading ? "Giriş yapılıyor..." : usePhoneLogin ? "Kod Gönder" : "Giriş Yap"}
-        </Button>
-      </>
-    );
+  
+  const resetRegisterPhoneVerification = () => {
+    setIsRegCodeSent(false);
+    setRegisterVerificationCode("");
   };
 
   return (
     <>
-      <Dialog open={isLoginOpen} onOpenChange={onLoginClose}>
-        <DialogContent className="sm:max-w-md bg-[#0A1120] border-white/10">
+      {/* Login Modal */}
+      <Dialog open={isLoginOpen} onOpenChange={onLoginOpenChange}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-white text-center">Giriş Yap</DialogTitle>
+            <DialogTitle>Giriş Yap</DialogTitle>
+            <DialogDescription>
+              Süper Saha'ya hoş geldiniz. Hesabınıza giriş yapın.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleLogin} className="space-y-4 py-4">
-            {renderLoginForm()}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isRegisterOpen} onOpenChange={onRegisterClose}>
-        <DialogContent className="sm:max-w-md bg-[#0A1120] border-white/10">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-white text-center">Kayıt Ol</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleRegister} className="space-y-4 py-4">
-            <div className="relative">
-              <Input
-                placeholder="Ad Soyad"
-                value={registerName}
-                onChange={(e) => setRegisterName(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white"
-                required
-              />
-              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            </div>
+          
+          <Tabs defaultValue="email" className="w-full mt-4" onValueChange={(value) => setLoginMethod(value as "email" | "phone")}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">E-posta</TabsTrigger>
+              <TabsTrigger value="phone">Telefon</TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <div className="flex flex-wrap sm:flex-nowrap">
-                <select 
-                  className="bg-white/90 border-r-0 border-white/20 text-black font-medium rounded-l-md px-3 py-2 w-full sm:w-auto"
-                  value={usePhone ? "phone" : "email"}
-                  onChange={(e) => setUsePhone(e.target.value === "phone")}
-                >
-                  <option value="email" className="text-black font-medium">E-posta</option>
-                  <option value="phone" className="text-black font-medium">Telefon</option>
-                </select>
-                {!usePhone ? (
-                  <div className="relative flex-1 w-full sm:w-auto mt-2 sm:mt-0">
+            <TabsContent value="email" className="mt-4">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="loginEmail">E-posta</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
+                      id="loginEmail"
                       type="email"
                       placeholder="E-posta adresiniz"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10 text-white sm:rounded-l-none w-full"
-                      required={!usePhone}
+                      className="pl-10"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
                     />
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="loginPassword">Şifre</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="loginPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      className="pl-10"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter className="mt-4">
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="phone" className="mt-4">
+              <form onSubmit={handleLogin} className="space-y-4">
+                {!isLoginCodeSent ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="loginPhone">Telefon Numarası</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="loginPhone"
+                        type="tel"
+                        placeholder="05XX XXX XXXX"
+                        className="pl-10"
+                        value={loginPhone}
+                        onChange={(e) => setLoginPhone(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
                 ) : (
-                  <div className="relative flex-1 w-full sm:w-auto mt-2 sm:mt-0">
-                    <Input
-                      type="tel"
-                      placeholder="Telefon numaranız"
-                      value={registerPhone}
-                      onChange={(e) => setRegisterPhone(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10 text-white sm:rounded-l-none pr-10 w-full"
-                      required={usePhone}
-                    />
-                    <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-help">
-                            <AlertCircle className="h-4 w-4 text-yellow-400" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-black/80 text-white max-w-xs p-2">
-                          <p>{phoneSecurityInfo}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                  <>
+                    <div className="flex items-center mb-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-0 h-8 mr-2"
+                        onClick={resetLoginPhoneVerification}
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-1" />
+                        Geri
+                      </Button>
+                      <p className="text-sm">
+                        <span className="font-medium">{formatPhoneNumber(loginPhone)}</span> numarasına kod gönderildi
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="loginVerificationCode">Doğrulama Kodu</Label>
+                      <Input
+                        id="loginVerificationCode"
+                        type="text"
+                        placeholder="6 haneli doğrulama kodu"
+                        value={loginVerificationCode}
+                        onChange={(e) => setLoginVerificationCode(e.target.value)}
+                        required
+                        maxLength={6}
+                      />
+                    </div>
+                  </>
                 )}
-              </div>
-            </div>
+                
+                <DialogFooter className="mt-4">
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting
+                      ? "İşleniyor..."
+                      : isLoginCodeSent
+                      ? "Doğrula ve Giriş Yap"
+                      : "Kod Gönder"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Register Modal */}
+      <Dialog open={isRegisterOpen} onOpenChange={onRegisterOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hesap Oluştur</DialogTitle>
+            <DialogDescription>
+              Süper Saha'ya katılmak için kaydolun.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="email" className="w-full mt-4" onValueChange={(value) => setRegisterMethod(value as "email" | "phone")}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">E-posta</TabsTrigger>
+              <TabsTrigger value="phone">Telefon</TabsTrigger>
+            </TabsList>
             
-            <div className="relative">
-              <Input
-                type="password"
-                placeholder="Şifre"
-                value={registerPassword}
-                onChange={(e) => setRegisterPassword(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white"
-                required
-              />
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            </div>
+            <TabsContent value="email" className="mt-4">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="registerEmail">E-posta</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="registerEmail"
+                      type="email"
+                      placeholder="E-posta adresiniz"
+                      className="pl-10"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="registerPassword">Şifre</Label>
+                  <Input
+                    id="registerPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="registerConfirmPassword">Şifre Tekrar</Label>
+                  <Input
+                    id="registerConfirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={registerConfirmPassword}
+                    onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <DialogFooter className="mt-4">
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? "Kaydediliyor..." : "Kayıt Ol"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
             
-            <div className="relative">
-              <Input
-                type="password"
-                placeholder="Şifre Tekrarı"
-                value={registerPasswordConfirm}
-                onChange={(e) => setRegisterPasswordConfirm(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white"
-                required
-              />
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            </div>
-            
-            <Button disabled={isLoading} type="submit" className="w-full bg-primary hover:bg-primary/90">
-              {isLoading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
-            </Button>
-          </form>
+            <TabsContent value="phone" className="mt-4">
+              <form onSubmit={handleRegister} className="space-y-4">
+                {!isRegCodeSent ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="registerPhone">Telefon Numarası</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="registerPhone"
+                        type="tel"
+                        placeholder="05XX XXX XXXX"
+                        className="pl-10"
+                        value={registerPhone}
+                        onChange={(e) => setRegisterPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center mb-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-0 h-8 mr-2"
+                        onClick={resetRegisterPhoneVerification}
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-1" />
+                        Geri
+                      </Button>
+                      <p className="text-sm">
+                        <span className="font-medium">{formatPhoneNumber(registerPhone)}</span> numarasına kod gönderildi
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="registerVerificationCode">Doğrulama Kodu</Label>
+                      <Input
+                        id="registerVerificationCode"
+                        type="text"
+                        placeholder="6 haneli doğrulama kodu"
+                        value={registerVerificationCode}
+                        onChange={(e) => setRegisterVerificationCode(e.target.value)}
+                        required
+                        maxLength={6}
+                      />
+                    </div>
+                  </>
+                )}
+                
+                <DialogFooter className="mt-4">
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting
+                      ? "İşleniyor..."
+                      : isRegCodeSent
+                      ? "Doğrula ve Kayıt Ol"
+                      : "Kod Gönder"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </>
