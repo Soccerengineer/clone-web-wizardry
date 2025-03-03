@@ -160,10 +160,11 @@ const Profile = () => {
         description: "Kullanıcı adınız güncellendi."
       });
       
-      // Sayfayı yenileme - UI'ın hemen güncellenmesi için
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Sayfayı yenilemek yerine sadece state'i güncelle
+      setFormData(prev => ({
+        ...prev,
+        nickname: formData.nickname
+      }));
       
     } catch (error: any) {
       console.error("Profil güncellenirken hata oluştu:", error);

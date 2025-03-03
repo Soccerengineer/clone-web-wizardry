@@ -35,27 +35,26 @@ const Navbar = () => {
             .single();
             
           if (profiles && profiles.nickname) {
-            // Sadece nickname kontrolü
             setUserName(profiles.nickname);
           } else {
             // Profil tablosu erişimi yoksa ya da profil verisi yoksa metadata'dan al
             const metadata = session.user.user_metadata;
             if (metadata && metadata.nickname) {
-              // Sadece nickname kontrolü
               setUserName(metadata.nickname);
             } else {
-              // Varsayılan değer "Süper Oyuncu"
-              setUserName("Süper Oyuncu");
+              // Kullanıcı ID'sinin ilk 8 karakterini kullan
+              setUserName(session.user.id.substring(0, 8));
             }
           }
         } catch (error) {
           console.error("Profil verisi çekilemedi:", error);
-          // Hata durumunda varsayılan değeri kullan
-          setUserName("Süper Oyuncu");
+          // Hata durumunda kullanıcı ID'sinin ilk 8 karakterini kullan
+          setUserName(session.user.id.substring(0, 8));
         }
       } else {
         // Giriş yapmamış kullanıcı
         setIsAuthenticated(false);
+        setUserName("");
       }
     };
     
@@ -63,7 +62,6 @@ const Navbar = () => {
     
     // Auth durumu dinleyici
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      // USER_UPDATED eventini de özellikle dinliyoruz
       if (event === 'USER_UPDATED' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         checkUser();
       }
@@ -74,16 +72,33 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Çıkış yapıldı",
-        description: "Başarıyla çıkış yaptınız."
-      });
+      // Önce localStorage'daki misafir kullanıcı durumunu kontrol et
+      const userType = localStorage.getItem('userType');
+      const isGuestUser = userType === 'guest';
+      
+      if (isGuestUser) {
+        // Misafir kullanıcı için sadece localStorage temizle
+        localStorage.removeItem('userType');
+        toast({
+          title: "Çıkış yapıldı",
+          description: "Misafir oturumu sonlandırıldı."
+        });
+      } else {
+        // Normal kullanıcı için Supabase oturumunu sonlandır
+        await supabase.auth.signOut();
+        toast({
+          title: "Çıkış yapıldı",
+          description: "Başarıyla çıkış yaptınız."
+        });
+      }
+      
+      // Çıkış sonrası ana sayfaya yönlendir
       navigate('/');
     } catch (error) {
+      console.error("Çıkış yapılırken hata oluştu:", error);
       toast({
         title: "Hata",
-        description: "Çıkış yapılırken bir hata oluştu.",
+        description: "Çıkış yapılırken bir sorun oluştu.",
         variant: "destructive"
       });
     }
