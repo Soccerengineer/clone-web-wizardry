@@ -151,14 +151,12 @@ const UserLayout = ({ children }: UserLayoutProps) => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full flex items-center gap-2 px-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={avatarUrl} />
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col items-start flex-1">
-                        <span className="text-sm font-medium text-white">{userName}</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8 border border-white/20">
+                          <AvatarImage src="/avatar_placeholder.png" alt={userName} className="object-cover" />
+                          <AvatarFallback className="bg-white/5">{userName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-white">{userName}</span>
                       </div>
                     </Button>
                   </DropdownMenuTrigger>

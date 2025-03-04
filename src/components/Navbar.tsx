@@ -160,13 +160,13 @@ const Navbar = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2 px-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" />
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col items-start">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8 border border-white/20">
+                          <AvatarImage src="/avatar_placeholder.png" alt={userName} className="object-cover" />
+                          <AvatarFallback className="bg-white/5">
+                            {userName?.split(' ').map((n: string) => n[0]).join('') || <User className="h-4 w-4" />}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="text-sm font-medium text-white">{userName}</span>
                       </div>
                     </Button>

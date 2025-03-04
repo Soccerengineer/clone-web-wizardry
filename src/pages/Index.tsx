@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import SearchCard from "@/components/SearchCard";
 import HowItWorks from "@/components/HowItWorks";
 import WhatWeOffer from "@/components/WhatWeOffer";
+import Rankings from "@/components/Rankings";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
@@ -91,13 +92,15 @@ const Index = () => {
                 birleştiren yenilikçi bir spor deneyimidir.
               </p>
 
-              <Button 
-                className="w-full sm:w-auto px-8 bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-lg sm:text-xl py-6 sm:py-8 transform transition-all duration-200 hover:scale-105"
-                onClick={handleGameStart}
-              >
-                <Play className="mr-2 h-6 w-6 sm:h-8 sm:w-8" />
-                MAÇA BAŞLA
-              </Button>
+              <div className="flex justify-center mx-auto my-8 w-full md:w-auto">
+                <Button 
+                  className="w-full sm:w-auto px-8 bg-[#ea384c] hover:bg-[#ea384c]/90 text-white text-lg sm:text-xl py-6 sm:py-8 transform transition-all duration-200 hover:scale-105"
+                  onClick={handleGameStart}
+                >
+                  <Play className="mr-2 h-6 w-6 sm:h-8 sm:w-8" />
+                  MAÇA BAŞLA
+                </Button>
+              </div>
             </div>
             
             <div className="flex-1 flex justify-center animate-fadeIn mt-8 md:mt-0" style={{ animationDelay: "0.2s" }}>
@@ -106,6 +109,7 @@ const Index = () => {
           </div>
         </div>
 
+        <Rankings />
         <HowItWorks />
         <WhatWeOffer />
       </main>
