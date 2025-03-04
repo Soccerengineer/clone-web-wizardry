@@ -110,12 +110,14 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        // Kullanıcı ana sayfadan geldiyse device-pairing'e, değilse ana sayfaya yönlendir
+        const fromHome = location.state?.from === '/';
+        navigate(fromHome ? '/device-pairing' : '/');
       }
     };
 
     checkSession();
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,8 +135,9 @@ const Auth = () => {
         description: "Giriş yapıldı.",
       });
       
-      // Başarılı girişte /device-pairing sayfasına yönlendir
-      navigate('/device-pairing');
+      // Kullanıcı ana sayfadan geldiyse device-pairing'e, değilse ana sayfaya yönlendir
+      const fromHome = location.state?.from === '/';
+      navigate(fromHome ? '/device-pairing' : '/');
     } catch (error: any) {
       toast({
         title: "Giriş Hatası",
@@ -156,7 +159,6 @@ const Auth = () => {
           options: {
             shouldCreateUser: true,
             data: {
-              // Telefon ile giriş yapanların adı "Misafir Oyuncu" olsun
               first_name: "Misafir",
               last_name: "Oyuncu"
             }
@@ -186,8 +188,9 @@ const Auth = () => {
           description: "Süper Saha'ya hoş geldiniz.",
         });
         
-        // Başarılı girişte /device-pairing sayfasına yönlendir
-        navigate('/device-pairing');
+        // Kullanıcı ana sayfadan geldiyse device-pairing'e, değilse ana sayfaya yönlendir
+        const fromHome = location.state?.from === '/';
+        navigate(fromHome ? '/device-pairing' : '/');
       }
     } catch (error: any) {
       toast({
@@ -268,7 +271,7 @@ const Auth = () => {
                   required
                 />
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              </div>
+                </div>
           
                 <div className="relative">
                   <Input

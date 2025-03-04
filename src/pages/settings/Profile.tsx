@@ -10,7 +10,7 @@ const Profile = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    nickname: "",
+    display_name: "",
     email: "",
     phone: "",
   });
@@ -36,24 +36,24 @@ const Profile = () => {
         const email = session.user.email || "";
         const phone = session.user.phone || "";
         
-        // Nickname bilgilerini al
-        let nickname = "";
+        // Display name bilgilerini al
+        let display_name = "";
         
         try {
           // Önce profil tablosundan deneyin
           const { data: profileData, error } = await supabase
             .from('profiles')
-            .select('nickname')
+            .select('display_name')
             .eq('id', session.user.id)
             .single();
           
           if (profileData) {
-            nickname = profileData.nickname || "";
+            display_name = profileData.display_name || "";
           } else {
             // Metadata'dan alın
             const metadata = session.user.user_metadata;
             if (metadata) {
-              nickname = metadata.nickname || "";
+              display_name = metadata.display_name || "";
             }
           }
         } catch (error) {
@@ -61,13 +61,13 @@ const Profile = () => {
           // Hata durumunda metadata'dan almayı deneyin
           const metadata = session.user.user_metadata;
           if (metadata) {
-            nickname = metadata.nickname || "";
+            display_name = metadata.display_name || "";
           }
         }
         
         // Form verilerini ayarla
         setFormData({
-          nickname: nickname || session.user.id.substring(0, 8),
+          display_name: display_name || session.user.id.substring(0, 8),
           email,
           phone,
         });
@@ -103,10 +103,10 @@ const Profile = () => {
         return;
       }
       
-      // User metadata'yı güncelle - sadece nickname değişiyor
+      // User metadata'yı güncelle
       const { error: metadataError } = await supabase.auth.updateUser({
         data: {
-          nickname: formData.nickname
+          display_name: formData.display_name
         }
       });
       
@@ -119,30 +119,25 @@ const Profile = () => {
         .eq('id', session.user.id)
         .single();
       
-      // Eğer profiles tablosu varsa ve kullanıcı kaydı yoksa, yeni kayıt oluştur
       if (!existingProfile) {
-        try {
-          // Profil tablosu varsa nickname'i ekle
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: session.user.id,
-              nickname: formData.nickname,
-              updated_at: new Date().toISOString()
-            });
-          
-          if (profileError) {
-            console.warn("Profil güncellenemedi, muhtemelen tablo yok:", profileError.message);
-          }
-        } catch (error) {
-          console.warn("Profil tablosu erişimi başarısız, devam ediliyor:", error);
+        // Profil tablosu varsa yeni kayıt oluştur
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            display_name: formData.display_name,
+            updated_at: new Date().toISOString()
+          });
+        
+        if (profileError) {
+          console.warn("Profil oluşturulamadı:", profileError.message);
         }
       } else {
-        // Profil tablosunu güncelle - sadece nickname değişiyor
+        // Profil tablosunu güncelle
         const { error: profileUpdateError } = await supabase
           .from('profiles')
           .update({
-            nickname: formData.nickname,
+            display_name: formData.display_name,
             updated_at: new Date().toISOString()
           })
           .eq('id', session.user.id);
@@ -157,20 +152,19 @@ const Profile = () => {
       
       toast({
         title: "Başarılı",
-        description: "Kullanıcı adınız güncellendi."
+        description: "Profil bilgileriniz güncellendi."
       });
       
-      // Sayfayı yenilemek yerine sadece state'i güncelle
-      setFormData(prev => ({
-        ...prev,
-        nickname: formData.nickname
-      }));
+      // Sayfayı yenileme - UI'ın hemen güncellenmesi için
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Profil güncellenirken hata oluştu:", error);
       toast({
         title: "Hata",
-        description: error.message || "Profil bilgileri güncellenirken bir sorun oluştu.",
+        description: "Profil güncellenirken bir sorun oluştu.",
         variant: "destructive"
       });
     } finally {
@@ -189,9 +183,9 @@ const Profile = () => {
             <div className="space-y-2">
               <label className="text-sm text-gray-400">Kullanıcı Adı</label>
               <Input
-                value={formData.nickname}
+                value={formData.display_name}
                 onChange={(e) =>
-                  setFormData({ ...formData, nickname: e.target.value })
+                  setFormData({ ...formData, display_name: e.target.value })
                 }
                 className="bg-white/5 border-white/10"
                 disabled={loading}

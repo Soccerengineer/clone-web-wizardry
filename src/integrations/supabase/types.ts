@@ -121,6 +121,13 @@ export interface Database {
           position: Database["public"]["Enums"]["player_position"] | null
           username: string | null
           xp_level: number | null
+          nickname: string | null
+          display_name: string | null
+          first_name: string | null
+          last_name: string | null
+          phone_number: string | null
+          user_type: string | null
+          updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -131,6 +138,13 @@ export interface Database {
           position?: Database["public"]["Enums"]["player_position"] | null
           username?: string | null
           xp_level?: number | null
+          nickname?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          phone_number?: string | null
+          user_type?: string | null
+          updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -141,6 +155,13 @@ export interface Database {
           position?: Database["public"]["Enums"]["player_position"] | null
           username?: string | null
           xp_level?: number | null
+          nickname?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          phone_number?: string | null
+          user_type?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

@@ -22,10 +22,8 @@ const UserProfile = ({ user, player, rating = 3.7, isLoading = false }: UserProf
     const loadUserProfile = async () => {
       // Başlangıç değerleri - geçici olarak prop'lardan gelen verileri kullan
       let tempName = 
-        player?.nickname || 
         player?.display_name || 
-        user?.user_metadata?.nickname || 
-        user?.user_metadata?.full_name || 
+        user?.user_metadata?.display_name || 
         'Süper Oyuncu';
       
       let tempAvatarUrl = player?.avatar_url || user?.user_metadata?.avatar_url || '/placeholder.svg';
@@ -35,12 +33,12 @@ const UserProfile = ({ user, player, rating = 3.7, isLoading = false }: UserProf
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('nickname, avatar_url')
+            .select('display_name, avatar_url')
             .eq('id', user.id)
             .single();
           
-          if (profile?.nickname) {
-            tempName = profile.nickname;
+          if (profile?.display_name) {
+            tempName = profile.display_name;
           }
           
           if (profile?.avatar_url) {

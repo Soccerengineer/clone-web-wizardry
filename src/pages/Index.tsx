@@ -60,12 +60,12 @@ const Index = () => {
         navigate('/device-pairing');
       } else {
         console.log('Kullanıcı oturum açmamış, /auth sayfasına yönlendiriliyor...');
-        navigate('/auth');
+        navigate('/auth', { state: { from: '/' } });
       }
     } catch (err) {
       console.error('Maça başla sırasında hata:', err);
       // Hata durumunda auth sayfasına yönlendir
-      navigate('/auth');
+      navigate('/auth', { state: { from: '/' } });
     }
   };
 

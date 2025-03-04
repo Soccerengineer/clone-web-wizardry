@@ -18,6 +18,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 // Ana Sayfalar
 const Index = lazy(() => import('@/pages/Index'));
 const Auth = lazy(() => import('@/pages/Auth'));
+const Register = lazy(() => import('@/pages/Register'));
 const Overview = lazy(() => import('@/pages/Overview'));
 const Statistics = lazy(() => import('@/pages/Statistics'));
 const Rankings = lazy(() => import('@/pages/Rankings'));
@@ -64,6 +65,7 @@ const AppRoutes = () => {
         {/* Genel erişilebilir sayfalar */}
         <Route path="/" element={<Index />} />
         <Route path="/auth/*" element={<Auth />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/about" element={<About />} />
         <Route path="/promotions" element={<Promotions />} />
         <Route path="/connection-error" element={<ConnectionError />} />

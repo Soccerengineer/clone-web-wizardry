@@ -25,25 +25,25 @@ const UserLayout = ({ children }: UserLayoutProps) => {
     
     if (session) {
       try {
-        // Profil tablosundan kullanıcı bilgilerini al - sadece nickname'e bak
+        // Profil tablosundan kullanıcı bilgilerini al - sadece display_name'e bak
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('avatar_url, nickname')
+          .select('avatar_url, display_name')
           .eq('id', session.user.id)
           .single();
         
         if (profile) {
-          // Sadece nickname'i kontrol et, yoksa "Süper Oyuncu" kullan
-          setUserName(profile.nickname || "Süper Oyuncu");
+          // Sadece display_name'i kontrol et, yoksa "Süper Oyuncu" kullan
+          setUserName(profile.display_name || "Süper Oyuncu");
           
           if (profile.avatar_url) {
             setAvatarUrl(profile.avatar_url);
           }
         } else {
-          // Metadata'dan bilgileri al - sadece nickname'e bak
+          // Metadata'dan bilgileri al - sadece display_name'e bak
           const metadata = session.user.user_metadata;
-          if (metadata && metadata.nickname) {
-            setUserName(metadata.nickname);
+          if (metadata && metadata.display_name) {
+            setUserName(metadata.display_name);
             
             if (metadata.avatar_url) {
               setAvatarUrl(metadata.avatar_url);

@@ -27,20 +27,20 @@ const Navbar = () => {
         setIsAuthenticated(true);
         
         try {
-          // Kullanıcı bilgilerini çek - sadece nickname alanını sor
+          // Kullanıcı bilgilerini çek - sadece display_name alanını sor
           const { data: profiles, error } = await supabase
             .from('profiles')
-            .select('nickname')
+            .select('display_name')
             .eq('id', session.user.id)
             .single();
             
-          if (profiles && profiles.nickname) {
-            setUserName(profiles.nickname);
+          if (profiles && profiles.display_name) {
+            setUserName(profiles.display_name);
           } else {
             // Profil tablosu erişimi yoksa ya da profil verisi yoksa metadata'dan al
             const metadata = session.user.user_metadata;
-            if (metadata && metadata.nickname) {
-              setUserName(metadata.nickname);
+            if (metadata && metadata.display_name) {
+              setUserName(metadata.display_name);
             } else {
               // Kullanıcı ID'sinin ilk 8 karakterini kullan
               setUserName(session.user.id.substring(0, 8));
@@ -79,6 +79,8 @@ const Navbar = () => {
       if (isGuestUser) {
         // Misafir kullanıcı için sadece localStorage temizle
         localStorage.removeItem('userType');
+        setIsAuthenticated(false);
+        setUserName("");
         toast({
           title: "Çıkış yapıldı",
           description: "Misafir oturumu sonlandırıldı."
@@ -86,6 +88,8 @@ const Navbar = () => {
       } else {
         // Normal kullanıcı için Supabase oturumunu sonlandır
         await supabase.auth.signOut();
+        setIsAuthenticated(false);
+        setUserName("");
         toast({
           title: "Çıkış yapıldı",
           description: "Başarıyla çıkış yaptınız."
@@ -193,7 +197,7 @@ const Navbar = () => {
                   <Button 
                     variant="ghost" 
                     className="text-white hover:bg-white/5 transition-colors"
-                    onClick={() => setIsLoginOpen(true)}
+                    onClick={() => navigate('/auth')}
                   >
                     <LogIn className="h-5 w-5 mr-1" />
                     Giriş Yap
@@ -201,7 +205,7 @@ const Navbar = () => {
                   <Button 
                     variant="default"
                     className="bg-primary hover:bg-primary/90"
-                    onClick={() => setIsRegisterOpen(true)}
+                    onClick={() => navigate('/register')}
                   >
                     <User className="h-5 w-5 mr-1" />
                     Kayıt Ol
